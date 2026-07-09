@@ -38,6 +38,7 @@ export default function Footer() {
               <Link href="/#services" className="footer-link">Services</Link>
               <Link href="/#contact" className="footer-link">Contact</Link>
               <Link href="/book" className="footer-link">Book a Ride</Link>
+              <Link href="/privacy" className="footer-link">Privacy Policy</Link>
             </div>
           </div>
 
