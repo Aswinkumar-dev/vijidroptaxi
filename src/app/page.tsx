@@ -9,6 +9,7 @@ export default function Home() {
   const [distance, setDistance] = useState<number>(50);
   const [carType, setCarType] = useState<'hatchback' | 'sedan' | 'suv'>('sedan');
   const [rideType, setRideType] = useState<'one_way' | 'round_trip'>('one_way');
+  const [hasAC, setHasAC] = useState<boolean>(true);
   const [fareRules, setFareRules] = useState<any[]>([]);
   const [estimate, setEstimate] = useState<number>(0);
   const [contactName, setContactName] = useState('');
@@ -25,10 +26,7 @@ export default function Home() {
       alert('Phone number must be exactly 10 digits (numbers only).');
       return;
     }
-    if (!contactMessage.trim()) {
-      alert('Please enter your message.');
-      return;
-    }
+
     alert('Thank you! Your message has been received. Our coordinator will contact you shortly.');
     setContactName('');
     setContactPhone('');
@@ -48,35 +46,27 @@ export default function Home() {
     fetchFareRules();
   }, []);
 
-  useEffect(() => {
-    // Calculate estimate based on rules or defaults
-    const rule = fareRules.find(r => r.car_type === carType && r.ride_type === rideType);
-    let base = 100;
-    let rate = 15;
-    let allowance = 0;
-
-    if (rule) {
-      base = Number(rule.base_fare);
-      rate = Number(rule.per_km_rate);
-      allowance = Number(rule.driver_allowance || 0);
-    } else {
-      // Defaults
-      if (carType === 'hatchback') {
-        base = 80;
-        rate = 12;
-      } else if (carType === 'suv') {
-        base = 150;
-        rate = 20;
-        if (rideType === 'round_trip') allowance = 300;
-      } else {
-        base = 100;
-        rate = 15;
-        if (rideType === 'round_trip') allowance = 250;
-      }
+  // Get active rate per KM based on car type and A/C selection
+  const getPerKmRate = () => {
+    if (carType === 'hatchback') {
+      return hasAC ? 13 : 12;
+    } else if (carType === 'sedan') {
+      return hasAC ? 15 : 14;
+    } else if (carType === 'suv') {
+      return hasAC ? 21 : 20;
     }
+    return 15;
+  };
 
-    setEstimate(base + (distance * rate) + allowance);
-  }, [distance, carType, rideType, fareRules]);
+  const perKmRate = getPerKmRate();
+
+  useEffect(() => {
+    let calculatedFare = distance * perKmRate;
+    if (rideType === 'round_trip') {
+      calculatedFare = calculatedFare * 2;
+    }
+    setEstimate(calculatedFare);
+  }, [distance, carType, rideType, hasAC, perKmRate]);
 
   return (
     <div style={{ fontFamily: 'var(--font-secondary)' }}>
@@ -223,10 +213,10 @@ export default function Home() {
                       key={type}
                       type="button"
                       className={`btn btn-sm ${carType === type ? 'btn-primary' : 'btn-ghost'}`}
-                      style={{ border: carType !== type ? '1px solid var(--border-color)' : '', textTransform: 'capitalize' }}
+                      style={{ border: carType !== type ? '1px solid var(--border-color)' : '', textTransform: type === 'suv' ? 'uppercase' : 'capitalize' }}
                       onClick={() => setCarType(type)}
                     >
-                      {type}
+                      {type === 'suv' ? 'SUV' : type}
                     </button>
                   ))}
                 </div>
@@ -255,6 +245,44 @@ export default function Home() {
               </div>
 
               <div className="form-group">
+                <label className="form-label">A/C Option</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${hasAC ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ border: !hasAC ? '1px solid var(--border-color)' : '' }}
+                    onClick={() => setHasAC(true)}
+                  >
+                    With A/C
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${!hasAC ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ border: hasAC ? '1px solid var(--border-color)' : '' }}
+                    onClick={() => setHasAC(false)}
+                  >
+                    Without A/C
+                  </button>
+                </div>
+              </div>
+
+              {/* Dynamic Price Info Badge */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: 'rgba(249, 115, 22, 0.05)',
+                border: '1px dashed var(--primary)',
+                padding: '0.75rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                marginBottom: '1.25rem',
+                fontSize: '0.9rem'
+              }}>
+                <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>Price per KM:</span>
+                <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.1rem' }}>₹{perKmRate} / KM</span>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">Distance: {distance} KM</label>
                 <input
                   type="range"
@@ -294,10 +322,14 @@ export default function Home() {
               <div style={{ fontSize: '3.5rem', fontWeight: 800, color: 'white', margin: '0.5rem 0' }}>
                 ₹{estimate.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
               </div>
-              <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: '2rem', maxWidth: '300px' }}>
-                Estimated for {distance} KM using a {carType} for a {rideType === 'one_way' ? 'one-way drop' : 'round trip'}. Includes base fare, km rate, and driver allowance.
+              <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: '2rem', maxWidth: '300px', lineHeight: '1.5' }}>
+                {rideType === 'one_way' ? (
+                  `Estimated for ${distance} KM at ₹${perKmRate}/KM using a ${carType} (${hasAC ? 'With A/C' : 'Without A/C'}) for a one-way drop.`
+                ) : (
+                  `Estimated for ${distance} KM one-way (total ${distance * 2} KM round-trip) at ₹${perKmRate}/KM using a ${carType} (${hasAC ? 'With A/C' : 'Without A/C'}).`
+                )}
               </p>
-              <Link href={`/book?car_type=${carType}&ride_type=${rideType}&distance=${distance}`} className="btn btn-primary" style={{ width: '100%' }}>
+              <Link href={`/book?car_type=${carType}&ride_type=${rideType}&distance=${distance}&has_ac=${hasAC}`} className="btn btn-primary" style={{ width: '100%' }}>
                 Book This Ride Now
               </Link>
             </div>
@@ -400,7 +432,10 @@ export default function Home() {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Helpline Phone</div>
-                  <div style={{ fontWeight: 700, color: 'var(--secondary)' }}>+91 98765 43210</div>
+                  <div style={{ fontWeight: 700, color: 'var(--secondary)', lineHeight: '1.4' }}>
+                    +91 63828 82740 <br />
+                    +91 63848 19045
+                  </div>
                 </div>
               </div>
 
@@ -424,7 +459,7 @@ export default function Home() {
               <h3 style={{ marginBottom: '1.5rem', color: 'var(--secondary)' }}>Send an Inquiry</h3>
               <form onSubmit={handleContactSubmit}>
                 <div className="form-group">
-                  <label className="form-label">Full Name</label>
+                  <label className="form-label">Full Name <span style={{ color: 'red' }}>*</span></label>
                   <input
                     type="text"
                     className="form-control"
@@ -435,7 +470,7 @@ export default function Home() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Phone Number</label>
+                  <label className="form-label">Phone Number <span style={{ color: 'red' }}>*</span></label>
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <span style={{
                       backgroundColor: '#F1F5F9',
@@ -461,10 +496,9 @@ export default function Home() {
                   <textarea
                     className="form-control"
                     rows={3}
-                    placeholder="Ask about bookings, schedules, or pricing rules..."
+                    placeholder="Ask about bookings, schedules, or pricing rules (optional)..."
                     value={contactMessage}
                     onChange={(e) => setContactMessage(e.target.value)}
-                    required
                   ></textarea>
                 </div>
                 <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>

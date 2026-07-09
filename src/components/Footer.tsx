@@ -17,14 +17,14 @@ export default function Footer() {
           gap: '2.5rem',
           marginBottom: '3rem'
         }}>
-          <div>
+          <div style={{ textAlign: 'center' }}>
             <div style={{ marginBottom: '1.25rem' }}>
               <span style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-primary)', letterSpacing: '-0.02em' }}>
                 Viji Drop Taxi
               </span>
             </div>
-            <p style={{ color: '#94A3B8', fontSize: '0.9rem', lineHeight: '1.6' }}>
-              Viji Drop Taxi is your premium choice for reliable and comfortable one-way and round-trip taxi services. We operate a small, dedicated fleet to ensure the highest standards of safety, promptness, and clean vehicles.
+            <p style={{ color: '#94A3B8', fontSize: '0.9rem', lineHeight: '1.6', textAlign: 'center' }}>
+              Your trusted choice for one-way and round-trip taxi services, with clean vehicles, reliable service, and comfortable rides.
             </p>
           </div>
 
@@ -60,7 +60,7 @@ export default function Footer() {
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem', color: '#94A3B8' }}>
               <span>📍 123 Main Bazaar St, Chennai, Tamil Nadu</span>
-              <span>📞 +91 98765 43210</span>
+              <span>📞 +91 63828 82740 / +91 63848 19045</span>
               <span>✉️ vijaykumarr782@gmail.com</span>
               <span>⏰ 24/7 Service Available</span>
             </div>
