@@ -17,13 +17,13 @@ export default function Footer() {
           gap: '2.5rem',
           marginBottom: '3rem'
         }}>
-          <div style={{ textAlign: 'center' }}>
+          <div>
             <div style={{ marginBottom: '1.25rem' }}>
               <span style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', fontFamily: 'var(--font-primary)', letterSpacing: '-0.02em' }}>
                 Viji Drop Taxi
               </span>
             </div>
-            <p style={{ color: '#94A3B8', fontSize: '0.9rem', lineHeight: '1.6', textAlign: 'center' }}>
+            <p style={{ color: '#94A3B8', fontSize: '0.9rem', lineHeight: '1.6', textAlign: 'justify' }}>
               Your trusted choice for one-way and round-trip taxi services, with clean vehicles, reliable service, and comfortable rides.
             </p>
           </div>
