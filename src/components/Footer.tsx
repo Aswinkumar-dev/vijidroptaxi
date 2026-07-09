@@ -59,7 +59,7 @@ export default function Footer() {
               Contact Us
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem', color: '#94A3B8' }}>
-              <span>📍 123 Main Bazaar St, Chennai, Tamil Nadu</span>
+              <span>📍 16, Somavur Kizhpathi Street, Kalinjukuppam, Viluppuram, Tamil Nadu</span>
               <span>📞 +91 63828 82740 / +91 63848 19045</span>
               <span>✉️ vijaykumarr782@gmail.com</span>
               <span>⏰ 24/7 Service Available</span>
