@@ -5,6 +5,16 @@ import Link from 'next/link';
 import { ShieldCheck, Mail, Phone, Calendar } from 'lucide-react';
 
 export default function PrivacyPolicy() {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const currentMonthYear = mounted
+    ? new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
+    : 'July 2026';
+
   return (
     <div style={{
       padding: '4rem 1.5rem',
@@ -28,7 +38,7 @@ export default function PrivacyPolicy() {
             </span>
             <h1 style={{ color: 'var(--secondary)', marginBottom: '0.5rem', fontSize: '2.5rem' }}>Privacy Policy</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
-              <Calendar size={14} /> Last Updated: July 2026
+              <Calendar size={14} /> Last Updated: {currentMonthYear}
             </p>
           </div>
 
