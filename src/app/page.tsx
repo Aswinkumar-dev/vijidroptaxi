@@ -99,11 +99,10 @@ export default function Home() {
               Chennai's Premium Cab Service
             </span>
             <h1 className="hero-title" style={{ marginBottom: '1.5rem', color: 'var(--secondary)', lineHeight: 1.25 }}>
-              Reliable, Comfortable & <br className="desktop-only-br" />
-              <span style={{ color: 'var(--primary)' }}>Affordable Drop Taxi</span>
+              Reliable, Comfortable & <span style={{ color: 'var(--primary)' }}>Affordable Drop Taxi</span>
             </h1>
             <p className="hero-subtitle-left">
-              Whether it's a one-way outstation drop or a comfortable round-trip family tour, Viji Drop Taxi offers clean vehicles and professional chauffeurs at transparent pricing.
+              Travel in clean, comfortable cars with professional drivers and transparent pricing. Book your ride in minutes.
             </p>
             <div className="hero-cta-left">
               <Link href="/book" className="btn btn-primary btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -335,7 +334,7 @@ export default function Home() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <ShieldCheck size={20} style={{ color: 'var(--primary)' }} />
-                <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>Verified Chauffeurs</span>
+                <span style={{ fontWeight: 600, color: 'var(--secondary)' }}>Professional Drivers</span>
               </div>
             </div>
           </div>
@@ -416,7 +415,7 @@ export default function Home() {
                 </div>
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Email Address</div>
-                  <div style={{ fontWeight: 700, color: 'var(--secondary)' }}>bookings@vijidroptaxi.com</div>
+                  <div style={{ fontWeight: 700, color: 'var(--secondary)' }}>vijaykumarr782@gmail.com</div>
                 </div>
               </div>
             </div>

@@ -60,7 +60,7 @@ export default function Footer() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem', color: '#94A3B8' }}>
               <span>📍 123 Main Bazaar St, Chennai, Tamil Nadu</span>
               <span>📞 +91 98765 43210</span>
-              <span>✉️ support@vijidroptaxi.com</span>
+              <span>✉️ vijaykumarr782@gmail.com</span>
               <span>⏰ 24/7 Service Available</span>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function Footer() {
           alignItems: 'center'
         }}>
           <span>© {new Date().getFullYear()} Viji Drop Taxi. All rights reserved.</span>
-          <span>Designed with care in Chennai, Tamil Nadu.</span>
+          <span>Designed by Webgrat.</span>
         </div>
       </div>
     </footer>

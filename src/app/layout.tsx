@@ -6,6 +6,9 @@ import Footer from '@/components/Footer';
 export const metadata: Metadata = {
   title: 'Viji Drop Taxi - Premium One-Way & Round-Trip Taxi Service',
   description: 'Book premium hatchback, sedan, or SUV rides for one-way drops and round-trips. Highly professional drivers, transparent flat fares, and 24/7 service.',
+  icons: {
+    icon: '/assets/viji%20drop%20taxi%20logo.png',
+  },
 };
 
 export default function RootLayout({
