@@ -4,7 +4,50 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Car, MapPin, ShieldCheck, Clock, Award, Star, Phone, Mail, ArrowRight, Calculator } from 'lucide-react';
+const HatchbackIcon = ({ active }: { active: boolean }) => (
+  <img
+    src="/assets/hatchback.png"
+    alt="Hatchback"
+    className="car-icon-hatchback"
+    style={{
+      objectFit: 'contain',
+      filter: active 
+        ? 'brightness(0) invert(1)' 
+        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
+      transition: 'filter 0.3s'
+    }}
+  />
+);
 
+const SedanIcon = ({ active }: { active: boolean }) => (
+  <img
+    src="/assets/sedan-car.png"
+    alt="Sedan"
+    className="car-icon-sedan"
+    style={{
+      objectFit: 'contain',
+      filter: active 
+        ? 'brightness(0) invert(1)' 
+        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
+      transition: 'filter 0.3s'
+    }}
+  />
+);
+
+const SUVIcon = ({ active }: { active: boolean }) => (
+  <img
+    src="/assets/suv-car.png"
+    alt="SUV"
+    className="car-icon-suv"
+    style={{
+      objectFit: 'contain',
+      filter: active 
+        ? 'brightness(0) invert(1)' 
+        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
+      transition: 'filter 0.3s'
+    }}
+  />
+);
 export default function Home() {
   const [distance, setDistance] = useState<number>(50);
   const [carType, setCarType] = useState<'hatchback' | 'sedan' | 'suv'>('sedan');
@@ -74,7 +117,7 @@ export default function Home() {
       <section className="hero-section">
         <div className="container hero-container-grid">
           <div className="hero-text-align">
-            <span className="hero-badge-align" style={{
+            <span className="hero-badge-align animate-fade-in-up" style={{
               backgroundColor: 'rgba(249, 115, 22, 0.1)',
               color: 'var(--primary)',
               padding: '0.5rem 1.25rem',
@@ -86,15 +129,15 @@ export default function Home() {
               display: 'inline-block',
               marginBottom: '1.5rem'
             }}>
-              Chennai's Premium Cab Service
+              Your journey our priority
             </span>
-            <h1 className="hero-title" style={{ marginBottom: '1.5rem', color: 'var(--secondary)', lineHeight: 1.25 }}>
+            <h1 className="hero-title animate-fade-in-up delay-100" style={{ marginBottom: '1.5rem', color: 'var(--secondary)', lineHeight: 1.25 }}>
               Reliable, Comfortable & <span style={{ color: 'var(--primary)' }}>Affordable Drop Taxi</span>
             </h1>
-            <p className="hero-subtitle-left">
+            <p className="hero-subtitle-left animate-fade-in-up delay-200">
               Travel in clean, comfortable cars with professional drivers and transparent pricing. Book your ride in minutes.
             </p>
-            <div className="hero-cta-left">
+            <div className="hero-cta-left animate-fade-in-up delay-300">
               <Link href="/book" className="btn btn-primary btn-lg" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
                 Book Your Ride Now <ArrowRight size={20} />
               </Link>
@@ -104,7 +147,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="hero-image-wrapper">
+          <div className="hero-image-wrapper animate-scale-in delay-200">
             <img
               src="/assets/hero%20image.webp"
               alt="Viji Drop Taxi Hero"
@@ -205,30 +248,42 @@ export default function Home() {
                 <Calculator style={{ color: 'var(--primary)' }} /> Select Ride Details
               </h3>
               
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label">Car Type</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
                   {(['hatchback', 'sedan', 'suv'] as const).map(type => (
                     <button
                       key={type}
                       type="button"
-                      className={`btn btn-sm ${carType === type ? 'btn-primary' : 'btn-ghost'}`}
-                      style={{ border: carType !== type ? '1px solid var(--border-color)' : '', textTransform: type === 'suv' ? 'uppercase' : 'capitalize' }}
+                      className={`btn ${carType === type ? 'btn-primary' : 'btn-ghost'}`}
+                      style={{
+                        border: carType === type ? '1px solid var(--primary)' : '1px solid #94A3B8',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.1rem',
+                        padding: '0.2rem 0.1rem',
+                        height: '82px'
+                      }}
                       onClick={() => setCarType(type)}
                     >
-                      {type === 'suv' ? 'SUV' : type}
+                      {type === 'hatchback' && <HatchbackIcon active={carType === type} />}
+                      {type === 'sedan' && <SedanIcon active={carType === type} />}
+                      {type === 'suv' && <SUVIcon active={carType === type} />}
+                      <span>{type === 'suv' ? 'SUV' : type.charAt(0).toUpperCase() + type.slice(1)}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label">Ride Type</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <button
                     type="button"
                     className={`btn btn-sm ${rideType === 'one_way' ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ border: rideType !== 'one_way' ? '1px solid var(--border-color)' : '' }}
+                    style={{ border: rideType === 'one_way' ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
                     onClick={() => setRideType('one_way')}
                   >
                     One Way Drop
@@ -236,7 +291,7 @@ export default function Home() {
                   <button
                     type="button"
                     className={`btn btn-sm ${rideType === 'round_trip' ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ border: rideType !== 'round_trip' ? '1px solid var(--border-color)' : '' }}
+                    style={{ border: rideType === 'round_trip' ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
                     onClick={() => setRideType('round_trip')}
                   >
                     Round Trip
@@ -244,13 +299,13 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="form-group">
+              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label">A/C Option</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <button
                     type="button"
                     className={`btn btn-sm ${hasAC ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ border: !hasAC ? '1px solid var(--border-color)' : '' }}
+                    style={{ border: hasAC ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
                     onClick={() => setHasAC(true)}
                   >
                     With A/C
@@ -258,7 +313,7 @@ export default function Home() {
                   <button
                     type="button"
                     className={`btn btn-sm ${!hasAC ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ border: hasAC ? '1px solid var(--border-color)' : '' }}
+                    style={{ border: !hasAC ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
                     onClick={() => setHasAC(false)}
                   >
                     Without A/C
@@ -484,7 +539,7 @@ export default function Home() {
                       type="text"
                       className="form-control"
                       style={{ flex: 1 }}
-                      placeholder="9876543210"
+                      placeholder="99999 99999"
                       value={contactPhone}
                       onChange={(e) => setContactPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       required

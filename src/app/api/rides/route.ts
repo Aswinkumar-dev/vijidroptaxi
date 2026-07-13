@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
       pickup_address,
       drop_address,
       scheduled_at,
+      return_scheduled_at,
       car_type,
       distance_km,
       payment_mode,
@@ -78,6 +79,10 @@ export async function POST(req: NextRequest) {
     const calculated_distance = Number(distance_km);
     const total_fare = base_fare + (calculated_distance * per_km_rate) + driver_allowance;
 
+    const notesStr = return_scheduled_at 
+      ? `Return Trip: ${new Date(return_scheduled_at).toLocaleDateString('en-IN', { dateStyle: 'medium' })} ${new Date(return_scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
+      : null;
+
     // Create the ride booking
     const { data: ride, error: rideError } = await supabase
       .from('rides')
@@ -93,6 +98,7 @@ export async function POST(req: NextRequest) {
         total_fare,
         payment_mode,
         payment_status: 'pending',
+        notes: notesStr,
       })
       .select()
       .single();

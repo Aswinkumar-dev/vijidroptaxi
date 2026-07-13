@@ -178,10 +178,10 @@ export default function RideStatusDetail({ params }: PageProps) {
 
   const getStepProgress = (status: string) => {
     switch (status) {
-      case 'pending': return '15%';
-      case 'confirmed': return '45%';
-      case 'driver_arrived': return '70%';
-      case 'ongoing': return '85%';
+      case 'pending': return '0%';
+      case 'confirmed': return '25%';
+      case 'driver_arrived': return '50%';
+      case 'ongoing': return '75%';
       case 'completed': return '100%';
       default: return '0%';
     }
@@ -211,9 +211,10 @@ export default function RideStatusDetail({ params }: PageProps) {
             </span>
           </div>
 
-          {/* Progress node mapping */}
           <div className="steps-container" style={{ margin: '1rem 0 2.5rem 0' }}>
-            <div className="steps-progress" style={{ width: getStepProgress(ride.status) }}></div>
+            <div className="steps-line-wrapper">
+              <div className="steps-progress" style={{ width: getStepProgress(ride.status) }}></div>
+            </div>
             <div className={`step-node ${['pending', 'confirmed', 'driver_arrived', 'ongoing', 'completed'].includes(ride.status) ? 'completed' : ''}`}>
               <div className="step-circle">1</div>
               <span className="step-label" style={{ fontSize: '0.65rem' }}>Pending</span>
@@ -235,6 +236,69 @@ export default function RideStatusDetail({ params }: PageProps) {
               <span className="step-label" style={{ fontSize: '0.65rem' }}>Finished</span>
             </div>
           </div>
+
+          {/* Pending Status Alert and Office Coordination Call */}
+          {ride.status === 'pending' && (
+            <div style={{
+              backgroundColor: 'rgba(249, 115, 22, 0.05)',
+              border: '1px solid rgba(249, 115, 22, 0.2)',
+              borderRadius: 'var(--radius-md)',
+              padding: '1.5rem',
+              marginTop: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <style dangerouslySetInnerHTML={{__html: `
+                @keyframes pulse {
+                  0% {
+                    transform: scale(0.95);
+                    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7);
+                  }
+                  70% {
+                    transform: scale(1);
+                    box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
+                  }
+                  100% {
+                    transform: scale(0.95);
+                    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+                  }
+                }
+              `}} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--primary)',
+                  animation: 'pulse 1.5s infinite'
+                }}></div>
+                <strong style={{ color: 'var(--secondary)', fontSize: '1rem' }}>
+                  Awaiting Dispatcher Confirmation
+                </strong>
+              </div>
+              
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5', margin: 0 }}>
+                Booking Received! We are confirming your ride shortly. Our coordinator will call you within 5 minutes to confirm driver availability.
+              </p>
+
+              <div style={{
+                display: 'flex',
+                gap: '0.75rem',
+                flexWrap: 'wrap',
+                marginTop: '0.5rem',
+                borderTop: '1px solid var(--border-color)',
+                paddingTop: '1rem'
+              }}>
+                <a href="tel:+916382882740" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flex: 1, justifyContent: 'center' }}>
+                  <Phone size={16} /> Call Coordinator 1
+                </a>
+                <a href="tel:+916384819045" className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', flex: 1, justifyContent: 'center' }}>
+                  <Phone size={16} /> Call Coordinator 2
+                </a>
+              </div>
+            </div>
+          )}
 
           {/* OTP Presentation: ONLY shown once status becomes driver_arrived */}
           {ride.status === 'driver_arrived' && ride.otp && (

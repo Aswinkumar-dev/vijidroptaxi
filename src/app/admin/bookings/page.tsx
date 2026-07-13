@@ -235,6 +235,11 @@ export default function AdminBookings() {
                       <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', textTransform: 'capitalize', marginTop: '0.25rem' }}>
                         Type: {ride.car_type} | {ride.ride_type.replace('_', ' ')}
                       </div>
+                      {ride.notes && ride.notes.includes('Return Trip:') && (
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--success)', marginTop: '0.25rem' }}>
+                          🔄 {ride.notes}
+                        </div>
+                      )}
                     </td>
                     <td style={{ fontSize: '0.85rem', maxWidth: '200px' }}>
                       <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>

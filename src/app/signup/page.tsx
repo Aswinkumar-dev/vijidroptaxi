@@ -143,7 +143,7 @@ export default function Signup() {
                 type="text"
                 className="form-control"
                 style={{ flex: 1 }}
-                placeholder="9876543210"
+                placeholder="99999 99999"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 required

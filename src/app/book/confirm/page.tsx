@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { FileText, MapPin, Calendar, Clock, Car, CheckCircle, ArrowLeft } from 'lucide-react';
+import { FileText, MapPin, Calendar, Clock, Car, CheckCircle, ArrowLeft, User, Phone } from 'lucide-react';
 
 function ConfirmBookingContent() {
   const router = useRouter();
@@ -12,6 +12,7 @@ function ConfirmBookingContent() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   const [fareRule, setFareRule] = useState<any>(null);
   const [calculation, setCalculation] = useState({
@@ -30,11 +31,14 @@ function ConfirmBookingContent() {
   const scheduledAt = searchParams.get('scheduled_at') || '';
   const distanceKm = Number(searchParams.get('distance_km') || '50');
   const paymentMode = searchParams.get('payment_mode') || 'cash';
+  const fullName = searchParams.get('full_name') || '';
+  const phoneVal = searchParams.get('phone') || '';
+  const returnScheduledAt = searchParams.get('return_scheduled_at') || '';
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        router.push('/login');
+      if (user) {
+        setIsLoggedIn(true);
       }
     });
 
@@ -92,30 +96,72 @@ function ConfirmBookingContent() {
     setErrorMsg('');
 
     try {
-      const response = await fetch('/api/rides', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ride_type: rideType,
-          pickup_address: pickupAddress,
-          drop_address: dropAddress,
-          scheduled_at: scheduledAt,
-          car_type: carType,
-          distance_km: distanceKm,
-          payment_mode: paymentMode,
-        }),
-      });
+      if (isLoggedIn) {
+        // Authenticated customer booking
+        const response = await fetch('/api/rides', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            ride_type: rideType,
+            pickup_address: pickupAddress,
+            drop_address: dropAddress,
+            scheduled_at: scheduledAt,
+            return_scheduled_at: returnScheduledAt || undefined,
+            car_type: carType,
+            distance_km: distanceKm,
+            payment_mode: paymentMode,
+          }),
+        });
 
-      const data = await response.json();
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to place booking.');
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to place booking.');
+        }
+
+        router.push(`/rides/${data.id}?msg=Booking placed successfully!`);
+      } else {
+        // Guest customer booking (auto signup/login on backend)
+        const response = await fetch('/api/rides/guest-book', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            full_name: fullName,
+            phone: phoneVal,
+            ride_type: rideType,
+            pickup_address: pickupAddress,
+            drop_address: dropAddress,
+            scheduled_at: scheduledAt,
+            return_scheduled_at: returnScheduledAt || undefined,
+            car_type: carType,
+            distance_km: distanceKm,
+            payment_mode: paymentMode,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to place booking.');
+        }
+
+        // Log the user in client-side using the credentials returned from guest endpoint
+        if (data.email && data.password) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: data.password,
+          });
+          if (signInError) {
+            console.error('Client sign-in failed for guest:', signInError);
+          }
+        }
+
+        router.push(`/rides/${data.id || data.ride?.id}?msg=Booking placed successfully!`);
       }
-
-      // Success - Redirect to ride status page
-      router.push(`/rides/${data.id}?msg=Booking placed successfully!`);
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred while placing booking.');
       setSubmitting(false);
@@ -143,12 +189,14 @@ function ConfirmBookingContent() {
   };
 
   return (
-    <div style={{ padding: '3rem 0', backgroundColor: 'var(--bg-color)', minHeight: '80vh' }}>
+    <div className="page-entry-transition" style={{ padding: '3rem 0', backgroundColor: 'var(--bg-color)', minHeight: '80vh' }}>
       <div className="container" style={{ maxWidth: '650px' }}>
         
         {/* Step Indicator */}
         <div className="steps-container">
-          <div className="steps-progress" style={{ width: '50%' }}></div>
+          <div className="steps-line-wrapper">
+            <div className="steps-progress" style={{ width: '50%' }}></div>
+          </div>
           <div className="step-node completed">
             <div className="step-circle">1</div>
             <span className="step-label">Ride Details</span>
@@ -173,7 +221,7 @@ function ConfirmBookingContent() {
           </div>
         )}
 
-        <div className="receipt-box">
+        <div className="receipt-box shimmer-sweep-effect">
           <div className="receipt-header">
             <FileText size={32} style={{ color: 'var(--primary)', marginBottom: '0.5rem' }} />
             <h2 style={{ color: 'var(--secondary)' }}>Booking Summary</h2>
@@ -220,6 +268,26 @@ function ConfirmBookingContent() {
                 </div>
               </div>
 
+              {returnScheduledAt && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem', borderTop: '1px dotted var(--border-color)', paddingTop: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Calendar size={16} style={{ color: 'var(--success)' }} />
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Return Date</div>
+                      <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{formatDate(returnScheduledAt)}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Clock size={16} style={{ color: 'var(--success)' }} />
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Return Time</div>
+                      <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{formatTime(returnScheduledAt)}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Car size={16} style={{ color: 'var(--primary)' }} />
@@ -241,6 +309,26 @@ function ConfirmBookingContent() {
                   </div>
                 </div>
               </div>
+
+              {(fullName || phoneVal) && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <User size={16} style={{ color: 'var(--primary)' }} />
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Passenger Name</div>
+                      <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{fullName}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Phone size={16} style={{ color: 'var(--primary)' }} />
+                    <div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Phone Number</div>
+                      <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{phoneVal}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
