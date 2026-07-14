@@ -182,7 +182,7 @@ export default function Home() {
                 <MapPin size={32} />
               </div>
               <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>One-Way Taxi</h3>
-              <p>Pay only for the distance you travel. No round-trip return fares. Perfect for drop-offs at outstation cities, airports, and train stations.</p>
+              <p>Book a reliable one-way drop taxi and pay only for the distance you travel. No return fare or hidden charges. Perfect for outstation travel, airport drops, and railway station transfers.</p>
             </div>
 
             <div className="card card-hover" style={{ textAlign: 'center' }}>
