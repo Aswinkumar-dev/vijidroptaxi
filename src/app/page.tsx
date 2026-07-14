@@ -182,7 +182,7 @@ export default function Home() {
                 <MapPin size={32} />
               </div>
               <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>One-Way Taxi</h3>
-              <p>Book a reliable one-way drop taxi and pay only for the distance you travel. No return fare or hidden charges. Perfect for outstation travel, airport drops, and railway station transfers.</p>
+              <p>Book a reliable one-way drop taxi and pay only for your trip. Ideal for outstation, airport, and railway station drops with no return fare or hidden charges.</p>
             </div>
 
             <div className="card card-hover" style={{ textAlign: 'center' }}>
@@ -197,10 +197,10 @@ export default function Home() {
                 margin: '0 auto 1.5rem auto',
                 color: 'var(--secondary)'
               }}>
-                <Car size={32} />
+                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '36px', height: '36px', objectFit: 'contain', filter: 'invert(12%) sepia(16%) saturate(1478%) hue-rotate(181deg) brightness(98%) contrast(95%)' }} />
               </div>
               <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Round-Trip Cab</h3>
-              <p>Enjoy flexible multi-day outstation bookings. Driver allowance included, tailored for sightseeing, corporate visits, and family tours.</p>
+              <p>Book a comfortable outstation round-trip taxi for family tours, sightseeing, and business travel with professional drivers and transparent pricing.</p>
             </div>
 
             <div className="card card-hover" style={{ textAlign: 'center' }}>
@@ -218,7 +218,7 @@ export default function Home() {
                 <ShieldCheck size={32} />
               </div>
               <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Verified Fleet</h3>
-              <p>A specialized small fleet of active vehicles including Hatchbacks, Sedans, and SUVs, maintained to strict safety, cooling, and hygiene logs.</p>
+              <p>Choose from clean, well-maintained Hatchbacks, Sedans, and SUVs for a safe and comfortable journey.</p>
             </div>
           </div>
         </div>

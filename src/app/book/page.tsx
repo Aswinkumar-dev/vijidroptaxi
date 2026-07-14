@@ -519,6 +519,10 @@ function BookFormContent() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
 
+  const contactDetailsRef = React.useRef<HTMLDivElement>(null);
+  const fullNameRef = React.useRef<HTMLInputElement>(null);
+  const phoneRef = React.useRef<HTMLInputElement>(null);
+
   // Autocomplete states
   const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
   const [showDropSuggestions, setShowDropSuggestions] = useState(false);
@@ -657,11 +661,15 @@ function BookFormContent() {
     if (!user) {
       if (!fullName.trim() || fullName.trim().length < 2) {
         setErrorMsg('Please enter your full name (at least 2 characters).');
+        contactDetailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => fullNameRef.current?.focus(), 500);
         return;
       }
       const digits = phone.replace(/\D/g, '');
       if (digits.length !== 10) {
         setErrorMsg('Please enter a valid 10-digit phone number.');
+        contactDetailsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => phoneRef.current?.focus(), 500);
         return;
       }
     }
@@ -758,6 +766,24 @@ function BookFormContent() {
             Book Your Taxi
           </h2>
 
+          {errorMsg && (
+            <div className="alert alert-danger" style={{
+              backgroundColor: '#FEF2F2',
+              border: '1px solid #FCA5A5',
+              color: '#991B1B',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-sm)',
+              marginBottom: '1.5rem',
+              fontSize: '0.9rem',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              ⚠️ {errorMsg}
+            </div>
+          )}
+
           {user && profile && (
             <div style={{
               backgroundColor: 'rgba(34, 197, 94, 0.05)',
@@ -789,7 +815,7 @@ function BookFormContent() {
           )}
 
           {!user && (
-            <div style={{
+            <div ref={contactDetailsRef} style={{
               backgroundColor: 'rgba(249, 115, 22, 0.02)',
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-md)',
@@ -806,6 +832,7 @@ function BookFormContent() {
                 <div className="form-group">
                   <label className="form-label">Full Name</label>
                   <input
+                    ref={fullNameRef}
                     type="text"
                     className="form-control"
                     placeholder="John Doe"
@@ -830,6 +857,7 @@ function BookFormContent() {
                       fontSize: '0.9rem'
                     }}>+91</span>
                     <input
+                      ref={phoneRef}
                       type="tel"
                       className="form-control"
                       style={{ borderRadius: '0 var(--radius-sm) var(--radius-sm) 0' }}
