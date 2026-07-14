@@ -974,6 +974,14 @@ p {
   white-space: nowrap;
   animation: bounce-horizontal 2s infinite, glow-pulse 2s infinite;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  opacity: 1;
+}
+
+.whatsapp-tooltip.hidden {
+  opacity: 0;
+  transform: translateX(10px);
+  pointer-events: none;
 }
 
 .whatsapp-icon-btn {

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Car, MapPin, ShieldCheck, Clock, Award, Star, Phone, Mail, ArrowRight, Calculator } from 'lucide-react';
+import { Car, MapPin, ShieldCheck, Clock, Award, Star, Phone, Mail, ArrowRight, Calculator, Smartphone, PhoneCall, KeyRound } from 'lucide-react';
 const HatchbackIcon = ({ active }: { active: boolean }) => (
   <img
     src="/assets/hatchback.png"
@@ -58,22 +58,47 @@ export default function Home() {
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [contactMessage, setContactMessage] = useState('');
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
-  const handleContactSubmit = (e: React.FormEvent) => {
+  const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (contactName.trim().length < 2) {
       alert('Full Name must be at least 2 characters long.');
       return;
     }
-    if (contactPhone.length !== 10) {
-      alert('Phone number must be exactly 10 digits (numbers only).');
+    if (contactPhone.replace(/\D/g, '').length !== 10) {
+      alert('Phone number must be exactly 10 digits.');
       return;
     }
 
-    alert('Thank you! Your message has been received. Our coordinator will contact you shortly.');
-    setContactName('');
-    setContactPhone('');
-    setContactMessage('');
+    setIsSubmittingContact(true);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: contactName,
+          phone: contactPhone,
+          message: contactMessage,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send message.');
+      }
+
+      alert('Thank you! Your inquiry has been sent to Viji Drop Taxi. Our coordinator will contact you shortly.');
+      setContactName('');
+      setContactPhone('');
+      setContactMessage('');
+    } catch (error: any) {
+      alert(error.message || 'An error occurred while sending your message. Please try again.');
+    } finally {
+      setIsSubmittingContact(false);
+    }
   };
 
   useEffect(() => {
@@ -187,17 +212,16 @@ export default function Home() {
 
             <div className="card card-hover" style={{ textAlign: 'center' }}>
               <div style={{
-                backgroundColor: 'rgba(30, 41, 59, 0.05)',
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
                 width: '64px',
                 height: '64px',
                 borderRadius: 'var(--radius-md)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 1.5rem auto',
-                color: 'var(--secondary)'
+                margin: '0 auto 1.5rem auto'
               }}>
-                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '36px', height: '36px', objectFit: 'contain', filter: 'invert(12%) sepia(16%) saturate(1478%) hue-rotate(181deg) brightness(98%) contrast(95%)' }} />
+                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '46px', height: '46px', objectFit: 'contain', filter: 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)' }} />
               </div>
               <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Round-Trip Cab</h3>
               <p>Book a comfortable outstation round-trip taxi for family tours, sightseeing, and business travel with professional drivers and transparent pricing.</p>
@@ -205,7 +229,7 @@ export default function Home() {
 
             <div className="card card-hover" style={{ textAlign: 'center' }}>
               <div style={{
-                backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
                 width: '64px',
                 height: '64px',
                 borderRadius: 'var(--radius-md)',
@@ -213,7 +237,7 @@ export default function Home() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1.5rem auto',
-                color: 'var(--accent)'
+                color: 'var(--primary)'
               }}>
                 <ShieldCheck size={32} />
               </div>
@@ -393,6 +417,176 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Booking Process Section */}
+      <section id="process" style={{ padding: '5rem 0', backgroundColor: 'white', borderTop: '1px solid #F1F5F9' }}>
+        <div className="container">
+          <div className="section-title" style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Simple & Secure</span>
+            <h2>How to Book Your Taxi</h2>
+            <p>Follow these 4 simple steps to book a ride and start your journey with us.</p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: '2rem',
+            position: 'relative'
+          }} className="grid-4">
+            {/* Step 1 */}
+            <div className="card card-hover" style={{
+              position: 'relative',
+              padding: '2.5rem 1.5rem 1.5rem 1.5rem',
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-md)'
+            }}>
+              {/* Background Step Number */}
+              <span style={{
+                position: 'absolute',
+                top: '-10px',
+                right: '10px',
+                fontSize: '5rem',
+                fontWeight: 900,
+                color: 'rgba(30, 41, 59, 0.03)',
+                userSelect: 'none',
+                lineHeight: 1
+              }}>01</span>
+              
+              <div style={{
+                backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                width: '50px',
+                height: '50px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--primary)',
+                marginBottom: '1.5rem'
+              }}>
+                <Smartphone size={24} />
+              </div>
+              <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>1. Book Your Ride</h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                Select your vehicle type, trip type (one-way or round-trip), payment option, date, and pickup/drop time.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="card card-hover" style={{
+              position: 'relative',
+              padding: '2.5rem 1.5rem 1.5rem 1.5rem',
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-md)'
+            }}>
+              <span style={{
+                position: 'absolute',
+                top: '-10px',
+                right: '10px',
+                fontSize: '5rem',
+                fontWeight: 900,
+                color: 'rgba(30, 41, 59, 0.03)',
+                userSelect: 'none',
+                lineHeight: 1
+              }}>02</span>
+              
+              <div style={{
+                backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                width: '50px',
+                height: '50px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--primary)',
+                marginBottom: '1.5rem'
+              }}>
+                <PhoneCall size={24} />
+              </div>
+              <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>2. Driver Assignment</h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                Once submitted, our dispatch coordinator will call you directly to verify vehicle availability and confirm details.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="card card-hover" style={{
+              position: 'relative',
+              padding: '2.5rem 1.5rem 1.5rem 1.5rem',
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-md)'
+            }}>
+              <span style={{
+                position: 'absolute',
+                top: '-10px',
+                right: '10px',
+                fontSize: '5rem',
+                fontWeight: 900,
+                color: 'rgba(30, 41, 59, 0.03)',
+                userSelect: 'none',
+                lineHeight: 1
+              }}>03</span>
+              
+              <div style={{
+                backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                width: '50px',
+                height: '50px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--primary)',
+                marginBottom: '1.5rem'
+              }}>
+                <KeyRound size={24} />
+              </div>
+              <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>3. Get Your OTP</h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                Once the trip is confirmed, a secure OTP (One Time Password) will be displayed directly on your booking status screen.
+              </p>
+            </div>
+
+            {/* Step 4 */}
+            <div className="card card-hover" style={{
+              position: 'relative',
+              padding: '2.5rem 1.5rem 1.5rem 1.5rem',
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)',
+              borderRadius: 'var(--radius-md)'
+            }}>
+              <span style={{
+                position: 'absolute',
+                top: '-10px',
+                right: '10px',
+                fontSize: '5rem',
+                fontWeight: 900,
+                color: 'rgba(30, 41, 59, 0.03)',
+                userSelect: 'none',
+                lineHeight: 1
+              }}>04</span>
+              
+              <div style={{
+                backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                width: '50px',
+                height: '50px',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '1.5rem'
+              }}>
+                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '30px', height: '30px', objectFit: 'contain', filter: 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)' }} />
+              </div>
+              <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>4. Start Your Journey</h4>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                Share the OTP with your driver upon arrival. Once verified in the driver's app, your journey commences safely.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* About Section */}
       <section id="about" style={{ padding: '5rem 0', backgroundColor: 'white' }}>
         <div className="container grid-2" style={{ alignItems: 'center', gap: '3rem' }}>
@@ -551,13 +745,18 @@ export default function Home() {
                   <textarea
                     className="form-control"
                     rows={3}
-                    placeholder="Ask about bookings, schedules, or pricing rules (optional)..."
+                    placeholder="Ask about bookings, schedules, or pricing rules..."
                     value={contactMessage}
                     onChange={(e) => setContactMessage(e.target.value)}
                   ></textarea>
                 </div>
-                <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
-                  Send Message
+                <button 
+                  type="submit" 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', marginTop: '0.5rem' }}
+                  disabled={isSubmittingContact}
+                >
+                  {isSubmittingContact ? 'Sending...' : 'Send Message'}
                 </button>
               </form>
             </div>
