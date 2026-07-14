@@ -400,10 +400,10 @@ export default function Home() {
             <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Who We Are</span>
             <h2 style={{ fontSize: '2.25rem', marginBottom: '1.5rem', color: 'var(--secondary)' }}>Personalized, Trustworthy, Safe</h2>
             <p style={{ marginBottom: '1.25rem' }}>
-              Unlike massive taxi aggregators, Viji Drop Taxi operates a selected network of 2 to 10 vehicles. Our small size allows us to perform manual verification on every car and assign highly professional local drivers to each booking.
+              Unlike large taxi companies, Viji Drop Taxi works with a small and trusted fleet of vehicles. This helps us personally check every car and choose experienced, professional drivers for every trip.
             </p>
             <p style={{ marginBottom: '2rem' }}>
-              Our dedicated admin panel manages all driver assignments manually, ensuring that we only send you drivers with verified licensing, pristine service history, and cars with fully functional air conditioning and safety harnesses.
+              Every booking and driver assignment is carefully managed by our team. We make sure you travel with trusted drivers and clean, well-maintained, air-conditioned cars for a safe and comfortable journey.
             </p>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
