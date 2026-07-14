@@ -221,7 +221,7 @@ export default function Home() {
                 justifyContent: 'center',
                 margin: '0 auto 1.5rem auto'
               }}>
-                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '46px', height: '46px', objectFit: 'contain', filter: 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)' }} />
+                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '46px', height: '46px', objectFit: 'contain', filter: 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%) drop-shadow(0.5px 0 0 #F97316) drop-shadow(-0.5px 0 0 #F97316) drop-shadow(0 0.5px 0 #F97316) drop-shadow(0 -0.5px 0 #F97316)' }} />
               </div>
               <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Round-Trip Cab</h3>
               <p>Book a comfortable outstation round-trip taxi for family tours, sightseeing, and business travel with professional drivers and transparent pricing.</p>
@@ -576,7 +576,7 @@ export default function Home() {
                 justifyContent: 'center',
                 marginBottom: '1.5rem'
               }}>
-                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '30px', height: '30px', objectFit: 'contain', filter: 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)' }} />
+                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '30px', height: '30px', objectFit: 'contain', filter: 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%) drop-shadow(0.5px 0 0 #F97316) drop-shadow(-0.5px 0 0 #F97316) drop-shadow(0 0.5px 0 #F97316) drop-shadow(0 -0.5px 0 #F97316)' }} />
               </div>
               <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>4. Start Your Journey</h4>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
