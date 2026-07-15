@@ -71,7 +71,6 @@ export default function Navbar() {
           <Link href="/#services" className="nav-link">Services</Link>
           <Link href="/#contact" className="nav-link">Contact</Link>
           <Link href="/book" className="btn btn-primary btn-sm" style={{ boxShadow: '0 4px 14px rgba(249, 115, 22, 0.3)' }}>Book Now</Link>
-          <Link href="/login" className="btn btn-outline btn-sm">Login</Link>
         </>
       );
     }
@@ -82,6 +81,7 @@ export default function Navbar() {
           <Link href="/admin/dashboard" className={`nav-link ${isActive('/admin/dashboard') ? 'nav-link-active' : ''}`}>Dashboard</Link>
           <Link href="/admin/bookings" className={`nav-link ${isActive('/admin/bookings') ? 'nav-link-active' : ''}`}>Bookings</Link>
           <Link href="/admin/drivers" className={`nav-link ${isActive('/admin/drivers') ? 'nav-link-active' : ''}`}>Drivers</Link>
+          <Link href="/admin/kyc" className={`nav-link ${isActive('/admin/kyc') ? 'nav-link-active' : ''}`}>KYC Review</Link>
           <Link href="/admin/cars" className={`nav-link ${isActive('/admin/cars') ? 'nav-link-active' : ''}`}>Cars</Link>
           <Link href="/admin/pricing" className={`nav-link ${isActive('/admin/pricing') ? 'nav-link-active' : ''}`}>Pricing</Link>
           <Link href="/admin/reviews" className={`nav-link ${isActive('/admin/reviews') ? 'nav-link-active' : ''}`}>Reviews</Link>
@@ -163,13 +163,13 @@ export default function Navbar() {
               <Link href="/#services" className="nav-link" onClick={() => setMenuOpen(false)}>Services</Link>
               <Link href="/#contact" className="nav-link" onClick={() => setMenuOpen(false)}>Contact</Link>
               <Link href="/book" className="btn btn-primary" onClick={() => setMenuOpen(false)}>Book Now</Link>
-              <Link href="/login" className="btn btn-outline" onClick={() => setMenuOpen(false)}>Login</Link>
             </>
           ) : profile?.role === 'admin' ? (
             <>
               <Link href="/admin/dashboard" className="nav-link" onClick={() => setMenuOpen(false)}>Dashboard</Link>
               <Link href="/admin/bookings" className="nav-link" onClick={() => setMenuOpen(false)}>Bookings</Link>
               <Link href="/admin/drivers" className="nav-link" onClick={() => setMenuOpen(false)}>Drivers</Link>
+              <Link href="/admin/kyc" className="nav-link" onClick={() => setMenuOpen(false)}>KYC Review</Link>
               <Link href="/admin/cars" className="nav-link" onClick={() => setMenuOpen(false)}>Cars</Link>
               <Link href="/admin/pricing" className="nav-link" onClick={() => setMenuOpen(false)}>Pricing</Link>
               <Link href="/admin/reviews" className="nav-link" onClick={() => setMenuOpen(false)}>Reviews</Link>

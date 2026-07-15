@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabaseServer';
+import { createClient, createAdminClient } from '@/lib/supabaseServer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,8 +15,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user profile role
-    const { data: profile, error: profileError } = await supabase
+    // Get user profile role using admin client (bypasses database RLS issues)
+    const adminSupabase = createAdminClient();
+    const { data: profile, error: profileError } = await adminSupabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -98,6 +99,7 @@ export async function POST(req: NextRequest) {
         total_fare,
         payment_mode,
         payment_status: 'pending',
+        car_type,
         notes: notesStr,
       })
       .select()

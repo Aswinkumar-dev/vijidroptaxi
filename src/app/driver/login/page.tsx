@@ -4,12 +4,13 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ShieldCheck, Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function DriverLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -19,16 +20,12 @@ export default function DriverLogin() {
     setErrorMsg('');
 
     try {
-      const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
 
       if (loginError || !authData.user) {
         throw new Error(loginError?.message || 'Incorrect email or password.');
       }
 
-      // Check user role from profiles
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -42,10 +39,15 @@ export default function DriverLogin() {
 
       if (profile.role !== 'driver') {
         await supabase.auth.signOut();
-        throw new Error(`This portal is for drivers. Your account has the '${profile.role}' role.`);
+        throw new Error(`This portal is for drivers only. Your account role is '${profile.role}'.`);
       }
 
-      // Successful login - redirect to driver dashboard
+      // Block if KYC not approved
+      if (profile.kyc_status !== 'approved') {
+        await supabase.auth.signOut();
+        throw new Error('Your KYC verification is still pending. You will be notified once it is approved by the admin.');
+      }
+
       router.push('/driver/dashboard');
       router.refresh();
     } catch (err: any) {
@@ -56,26 +58,22 @@ export default function DriverLogin() {
 
   return (
     <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '4rem 1.5rem',
-      backgroundColor: 'var(--bg-color)',
-      minHeight: 'calc(100vh - var(--header-height) - 300px)'
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '2rem 1.5rem', minHeight: '100vh', backgroundColor: 'var(--bg-color)'
     }}>
-      <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '2.5rem' }}>
+      <div className="card auth-floating-card" style={{
+        width: '100%', maxWidth: '440px', padding: '2.5rem',
+        background: 'rgba(255, 255, 255, 0.82)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
+      }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <span style={{
-            backgroundColor: 'rgba(30, 41, 59, 0.05)',
-            padding: '0.75rem',
-            borderRadius: 'var(--radius-full)',
-            color: 'var(--secondary)',
-            display: 'inline-flex',
-            marginBottom: '1rem'
-          }}>
-            <ShieldCheck size={28} />
-          </span>
-          <h2 style={{ color: 'var(--secondary)' }}>Driver Dashboard Login</h2>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <img
+              src="/assets/car icon sign up.png"
+              alt="Viji Drop Taxi"
+              style={{ width: '150px', height: 'auto', objectFit: 'contain', transform: 'translateX(-8px)' }}
+            />
+          </div>
+          <h2 style={{ color: 'var(--secondary)' }}>Driver Portal Sign In</h2>
           <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>Manage your active runs and view earnings</p>
         </div>
 
@@ -90,39 +88,44 @@ export default function DriverLogin() {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Mail size={14} style={{ color: 'var(--primary)' }} /> Driver Email
             </label>
-            <input
-              type="email"
-              className="form-control"
-              placeholder="driver@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <input type="email" className="form-control" placeholder="driver@example.com"
+              value={email} onChange={(e) => setEmail(e.target.value)}
+              style={{ width: '100%' }} required />
           </div>
 
           <div className="form-group">
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Lock size={14} style={{ color: 'var(--primary)' }} /> Password
             </label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="form-control"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ width: '100%', paddingRight: '2.75rem', boxSizing: 'border-box' }}
+                required
+              />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
+                position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)',
+                display: 'flex', alignItems: 'center', padding: 0,
+              }}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
-          <button type="submit" className="btn btn-secondary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
             {loading ? 'Authenticating...' : 'Sign In as Driver'}
           </button>
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Are you a customer?{' '}
-          <Link href="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-            Customer portal login
+          New driver?{' '}
+          <Link href="/driver/signup" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+            Register here
           </Link>
         </div>
       </div>

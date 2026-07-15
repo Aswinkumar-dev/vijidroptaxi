@@ -1213,3 +1213,24 @@ p {
     height: 52px !important;
   }
 }
+
+/* Auth Pages Floating Animations */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.auth-floating-card {
+  animation: float-slow 4s ease-in-out infinite;
+  box-shadow:
+    0 0 0 1px rgba(249, 115, 22, 0.15),
+    0 0 24px 6px rgba(249, 115, 22, 0.18),
+    0 0 60px 16px rgba(249, 115, 22, 0.09),
+    0 20px 40px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid rgba(249, 115, 22, 0.2) !important;
+}
+

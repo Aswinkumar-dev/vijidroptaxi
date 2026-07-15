@@ -4,12 +4,13 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { ShieldCheck, Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -40,6 +41,11 @@ export default function AdminLogin() {
         throw new Error('Profile details could not be found.');
       }
 
+      if (profile.role === 'pending_admin') {
+        await supabase.auth.signOut();
+        throw new Error('Your admin account is pending approval. Please contact the system owner to activate it.');
+      }
+
       if (profile.role !== 'admin') {
         await supabase.auth.signOut();
         throw new Error(`This portal is for admins. Your account has the '${profile.role}' role.`);
@@ -59,22 +65,26 @@ export default function AdminLogin() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '4rem 1.5rem',
+      padding: '2rem 1.5rem',
+      minHeight: '100vh',
       backgroundColor: 'var(--bg-color)',
-      minHeight: 'calc(100vh - var(--header-height) - 300px)'
     }}>
-      <div className="card" style={{ width: '100%', maxWidth: '440px', padding: '2.5rem' }}>
+      <div className="card auth-floating-card" style={{
+        width: '100%',
+        maxWidth: '440px',
+        padding: '2.5rem',
+        background: 'rgba(255, 255, 255, 0.82)',
+        backdropFilter: 'blur(18px)',
+        WebkitBackdropFilter: 'blur(18px)',
+      }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <span style={{
-            backgroundColor: 'rgba(249, 115, 22, 0.1)',
-            padding: '0.75rem',
-            borderRadius: 'var(--radius-full)',
-            color: 'var(--primary)',
-            display: 'inline-flex',
-            marginBottom: '1rem'
-          }}>
-            <ShieldCheck size={28} />
-          </span>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+            <img
+              src="/assets/car icon sign up.png"
+              alt="Viji Drop Taxi"
+              style={{ width: '150px', height: 'auto', objectFit: 'contain', transform: 'translateX(-8px)' }}
+            />
+          </div>
           <h2 style={{ color: 'var(--secondary)' }}>Admin Portal Sign In</h2>
           <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>Access the dispatcher fleet panel</p>
         </div>
@@ -96,6 +106,7 @@ export default function AdminLogin() {
               placeholder="admin@vijidroptaxi.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              style={{ width: '100%' }}
               required
             />
           </div>
@@ -104,14 +115,37 @@ export default function AdminLogin() {
             <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <Lock size={14} style={{ color: 'var(--primary)' }} /> Password
             </label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                className="form-control"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ width: '100%', paddingRight: '2.75rem', boxSizing: 'border-box' }}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '0.75rem',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 0
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>
@@ -120,9 +154,9 @@ export default function AdminLogin() {
         </form>
 
         <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Are you a customer?{' '}
-          <Link href="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>
-            Customer portal login
+          New admin?{' '}
+          <Link href="/admin/signup" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+            Request access
           </Link>
         </div>
       </div>

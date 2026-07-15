@@ -20,92 +20,18 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Validation
-    if (
-      !full_name ||
-      !phone ||
-      !ride_type ||
-      !pickup_address ||
-      !drop_address ||
-      !scheduled_at ||
-      !car_type ||
-      !distance_km ||
-      !payment_mode
-    ) {
+    if (!full_name || !phone || !ride_type || !pickup_address || !drop_address || !scheduled_at || !car_type || !distance_km || !payment_mode) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Clean and format phone number (e.g. 10 digits to +91XXXXXXXXXX)
+    // Clean phone number
     const digitsOnly = phone.replace(/\D/g, '');
     if (digitsOnly.length !== 10) {
       return NextResponse.json({ error: 'Phone number must be exactly 10 digits' }, { status: 400 });
     }
     const formattedPhone = '+91' + digitsOnly;
 
-    // Standardized guest credentials
-    const guestEmail = `${digitsOnly}@vijidroptaxi.com`;
-    const guestPassword = `viji_${digitsOnly}`;
-
-    let customerId: string;
-
-    // Check if profile exists with this phone number
-    const { data: existingProfile, error: profileError } = await adminClient
-      .from('profiles')
-      .select('id, role')
-      .eq('phone', formattedPhone)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error('Error checking profile:', profileError);
-      return NextResponse.json({ error: 'Database check failed' }, { status: 500 });
-    }
-
-    if (existingProfile) {
-      if (existingProfile.role !== 'customer') {
-        return NextResponse.json({ error: 'This phone number belongs to a driver or admin account.' }, { status: 400 });
-      }
-      customerId = existingProfile.id;
-
-      // Update their password in auth so we can guarantee successful client-side log in
-      const { error: updateAuthError } = await adminClient.auth.admin.updateUserById(customerId, {
-        password: guestPassword,
-      });
-
-      if (updateAuthError) {
-        console.error('Error updating existing guest password in auth:', updateAuthError);
-        // We will proceed even if auth update fails, but log it
-      }
-    } else {
-      // Create new auth user
-      const { data: newAuthUser, error: createAuthError } = await adminClient.auth.admin.createUser({
-        email: guestEmail,
-        password: guestPassword,
-        email_confirm: true,
-      });
-
-      if (createAuthError || !newAuthUser.user) {
-        console.error('Error creating auth user:', createAuthError);
-        return NextResponse.json({ error: createAuthError?.message || 'Failed to create account.' }, { status: 500 });
-      }
-
-      customerId = newAuthUser.user.id;
-
-      // Insert profile record
-      const { error: insertProfileError } = await adminClient
-        .from('profiles')
-        .insert({
-          id: customerId,
-          full_name: full_name.trim(),
-          phone: formattedPhone,
-          role: 'customer',
-        });
-
-      if (insertProfileError) {
-        console.error('Error inserting profile:', insertProfileError);
-        return NextResponse.json({ error: 'Failed to create customer profile.' }, { status: 500 });
-      }
-    }
-
-    // Fetch fare rule to compute the fare (consistent with the regular booking API)
+    // Fetch fare rule
     const { data: fareRule } = await adminClient
       .from('fare_rules')
       .select('*')
@@ -124,7 +50,6 @@ export async function POST(req: NextRequest) {
       per_km_rate = Number(fareRule.per_km_rate);
       driver_allowance = Number(fareRule.driver_allowance || 0);
     } else {
-      // Fallbacks
       if (car_type === 'hatchback') {
         base_fare = 80;
         per_km_rate = 12;
@@ -142,51 +67,36 @@ export async function POST(req: NextRequest) {
     const calculated_distance = Number(distance_km);
     const total_fare = base_fare + (calculated_distance * per_km_rate) + driver_allowance;
 
-    const notesStr = return_scheduled_at 
+    const notesStr = return_scheduled_at
       ? `Return Trip: ${new Date(return_scheduled_at).toLocaleDateString('en-IN', { dateStyle: 'medium' })} ${new Date(return_scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
       : null;
 
-    // Create the ride booking
+    // Insert ride directly — no auth, no profile creation
     const { data: ride, error: rideError } = await adminClient
       .from('rides')
       .insert({
-        customer_id: customerId,
+        customer_name: full_name.trim(),
+        customer_phone: formattedPhone,
         ride_type,
         pickup_address,
         drop_address,
         scheduled_at,
-        status: 'pending',
+        car_type,
         distance_km: calculated_distance,
-        base_fare,
         total_fare,
         payment_mode,
-        payment_status: 'pending',
-        car_type,
+        status: 'pending',
         notes: notesStr,
       })
       .select()
       .single();
 
-    if (rideError) {
+    if (rideError || !ride) {
       console.error('Error creating ride:', rideError);
-      return NextResponse.json({ error: rideError.message }, { status: 500 });
+      return NextResponse.json({ error: rideError?.message || 'Failed to create booking.' }, { status: 500 });
     }
 
-    // Create status history log
-    await adminClient.from('ride_status_history').insert({
-      ride_id: ride.id,
-      status: 'pending',
-      changed_by: customerId,
-    });
-
-    return NextResponse.json(
-      {
-        id: ride.id,
-        email: guestEmail,
-        password: guestPassword,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ id: ride.id, message: 'Booking created successfully' }, { status: 201 });
   } catch (error: any) {
     console.error('Server error during guest booking:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });

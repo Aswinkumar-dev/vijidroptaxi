@@ -19,8 +19,11 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Use admin client (bypasses RLS) to query requester profile and ride details
+    const adminSupabase = createAdminClient();
+
     // Get requester profile
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await adminSupabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
@@ -30,8 +33,6 @@ export async function GET(
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
     }
 
-    // Use admin client (bypasses RLS) to query ride details with relationships
-    const adminSupabase = createAdminClient();
     const { data: ride, error: rideError } = await adminSupabase
       .from('rides')
       .select(`

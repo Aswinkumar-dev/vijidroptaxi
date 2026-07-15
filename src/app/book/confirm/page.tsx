@@ -8,12 +8,11 @@ import { FileText, MapPin, Calendar, Clock, Car, CheckCircle, ArrowLeft, User, P
 function ConfirmBookingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  
+
   const [fareRule, setFareRule] = useState<any>(null);
   const [calculation, setCalculation] = useState({
     baseFare: 0,
@@ -36,12 +35,6 @@ function ConfirmBookingContent() {
   const returnScheduledAt = searchParams.get('return_scheduled_at') || '';
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        setIsLoggedIn(true);
-      }
-    });
-
     const fetchFareRule = async () => {
       setLoading(true);
       const { data, error } = await supabase
@@ -63,17 +56,13 @@ function ConfirmBookingContent() {
         rate = Number(data.per_km_rate);
         allowance = Number(data.driver_allowance || 0);
       } else {
-        // Fallbacks
         if (carType === 'hatchback') {
-          base = 80;
-          rate = 12;
+          base = 80; rate = 12;
         } else if (carType === 'suv') {
-          base = 150;
-          rate = 20;
+          base = 150; rate = 20;
           if (rideType === 'round_trip') allowance = 300;
         } else {
-          base = 100;
-          rate = 15;
+          base = 100; rate = 15;
           if (rideType === 'round_trip') allowance = 250;
         }
       }
@@ -92,76 +81,47 @@ function ConfirmBookingContent() {
   }, [carType, rideType, distanceKm]);
 
   const handleConfirm = async () => {
-    setSubmitting(true);
     setErrorMsg('');
 
+    // Simple validation — friendly messages only
+    if (!fullName.trim()) {
+      setErrorMsg('Please enter your name');
+      return;
+    }
+    const digitsOnly = phoneVal.replace(/\D/g, '');
+    if (digitsOnly.length !== 10) {
+      setErrorMsg('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    setSubmitting(true);
+
     try {
-      if (isLoggedIn) {
-        // Authenticated customer booking
-        const response = await fetch('/api/rides', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ride_type: rideType,
-            pickup_address: pickupAddress,
-            drop_address: dropAddress,
-            scheduled_at: scheduledAt,
-            return_scheduled_at: returnScheduledAt || undefined,
-            car_type: carType,
-            distance_km: distanceKm,
-            payment_mode: paymentMode,
-          }),
-        });
+      const response = await fetch('/api/rides/guest-book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: fullName,
+          phone: phoneVal,
+          ride_type: rideType,
+          pickup_address: pickupAddress,
+          drop_address: dropAddress,
+          scheduled_at: scheduledAt,
+          return_scheduled_at: returnScheduledAt || undefined,
+          car_type: carType,
+          distance_km: distanceKm,
+          payment_mode: paymentMode,
+        }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to place booking.');
-        }
-
-        router.push(`/rides/${data.id}?msg=Booking placed successfully!`);
-      } else {
-        // Guest customer booking (auto signup/login on backend)
-        const response = await fetch('/api/rides/guest-book', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            full_name: fullName,
-            phone: phoneVal,
-            ride_type: rideType,
-            pickup_address: pickupAddress,
-            drop_address: dropAddress,
-            scheduled_at: scheduledAt,
-            return_scheduled_at: returnScheduledAt || undefined,
-            car_type: carType,
-            distance_km: distanceKm,
-            payment_mode: paymentMode,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to place booking.');
-        }
-
-        // Log the user in client-side using the credentials returned from guest endpoint
-        if (data.email && data.password) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: data.email,
-            password: data.password,
-          });
-          if (signInError) {
-            console.error('Client sign-in failed for guest:', signInError);
-          }
-        }
-
-        router.push(`/rides/${data.id || data.ride?.id}?msg=Booking placed successfully!`);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to place booking.');
       }
+
+      // Show success page
+      router.push(`/book/success?name=${encodeURIComponent(fullName)}&phone=${encodeURIComponent(phoneVal)}`);
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred while placing booking.');
       setSubmitting(false);
@@ -170,28 +130,22 @@ function ConfirmBookingContent() {
 
   const formatDate = (isoString: string) => {
     if (!isoString) return '';
-    const date = new Date(isoString);
-    return date.toLocaleDateString('en-IN', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
+    return new Date(isoString).toLocaleDateString('en-IN', {
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
     });
   };
 
   const formatTime = (isoString: string) => {
     if (!isoString) return '';
-    const date = new Date(isoString);
-    return date.toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(isoString).toLocaleTimeString('en-IN', {
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
   return (
     <div className="page-entry-transition" style={{ padding: '3rem 0', backgroundColor: 'var(--bg-color)', minHeight: '80vh' }}>
       <div className="container" style={{ maxWidth: '650px' }}>
-        
+
         {/* Step Indicator */}
         <div className="steps-container">
           <div className="steps-line-wrapper">
@@ -207,7 +161,7 @@ function ConfirmBookingContent() {
           </div>
           <div className="step-node">
             <div className="step-circle">3</div>
-            <span className="step-label">Status</span>
+            <span className="step-label">Done</span>
           </div>
         </div>
 
@@ -258,7 +212,6 @@ function ConfirmBookingContent() {
                     <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{formatDate(scheduledAt)}</div>
                   </div>
                 </div>
-
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Clock size={16} style={{ color: 'var(--primary)' }} />
                   <div>
@@ -277,7 +230,6 @@ function ConfirmBookingContent() {
                       <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{formatDate(returnScheduledAt)}</div>
                     </div>
                   </div>
-
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Clock size={16} style={{ color: 'var(--success)' }} />
                     <div>
@@ -298,11 +250,10 @@ function ConfirmBookingContent() {
                     </div>
                   </div>
                 </div>
-
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <CheckCircle size={16} style={{ color: 'var(--primary)' }} />
                   <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Payment Selected</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Payment</div>
                     <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem', textTransform: 'uppercase' }}>
                       {paymentMode.replace('_', ' ')}
                     </div>
@@ -310,25 +261,23 @@ function ConfirmBookingContent() {
                 </div>
               </div>
 
-              {(fullName || phoneVal) && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <User size={16} style={{ color: 'var(--primary)' }} />
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Passenger Name</div>
-                      <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{fullName}</div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Phone size={16} style={{ color: 'var(--primary)' }} />
-                    <div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Phone Number</div>
-                      <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{phoneVal}</div>
-                    </div>
+              {/* Passenger Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <User size={16} style={{ color: 'var(--primary)' }} />
+                  <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Passenger Name</div>
+                    <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{fullName || '—'}</div>
                   </div>
                 </div>
-              )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Phone size={16} style={{ color: 'var(--primary)' }} />
+                  <div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Phone Number</div>
+                    <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{phoneVal || '—'}</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -336,7 +285,6 @@ function ConfirmBookingContent() {
             <h3 style={{ fontSize: '1rem', color: 'var(--secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
               Fare Breakdown
             </h3>
-
             {loading ? (
               <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>Recalculating rates...</div>
             ) : (
@@ -355,7 +303,6 @@ function ConfirmBookingContent() {
                     <span>₹{calculation.allowance.toFixed(2)}</span>
                   </div>
                 )}
-                
                 <div className="receipt-row receipt-row-bold">
                   <span>Total Payable Fare</span>
                   <span>₹{calculation.totalFare.toFixed(2)}</span>
