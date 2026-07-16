@@ -32,8 +32,16 @@ export default function DriverHistory() {
         .eq('profile_id', user.id)
         .single();
 
-      if (driverErr || !driver) {
-        throw new Error('Driver profile details not found.');
+      if (driverErr && driverErr.code !== 'PGRST116') {
+        throw driverErr;
+      }
+
+      if (!driver) {
+        // Driver is not linked yet
+        setRides([]);
+        setEarnings(0);
+        setLoading(false);
+        return;
       }
 
       // Fetch completed rides for this driver

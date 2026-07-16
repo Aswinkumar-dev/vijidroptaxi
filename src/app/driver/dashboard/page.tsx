@@ -25,32 +25,56 @@ export default function DriverDashboard() {
         return;
       }
 
-      // 2. Fetch driver profile data
+      // 2. Fetch profile details first
+      const { data: profile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', user.id)
+        .single();
+
+      if (profileErr || !profile) {
+        throw new Error('User profile details could not be found.');
+      }
+
+      // 3. Fetch driver record
       const { data: driverData, error: driverErr } = await supabase
         .from('drivers')
         .select(`
           *,
-          profile:profiles(id, full_name, role),
           car:cars(*)
         `)
         .eq('profile_id', user.id)
         .single();
 
-      if (driverErr || !driverData) {
-        throw new Error('Driver profile details could not be found in profiles/drivers tables.');
+      if (driverErr && driverErr.code !== 'PGRST116') {
+        throw driverErr;
       }
 
-      setDriver(driverData);
+      if (driverData) {
+        setDriver({
+          ...driverData,
+          profile: profile
+        });
 
-      // 3. Fetch active rides
-      const response = await fetch('/api/driver/rides');
-      const data = await response.json();
+        // 4. Fetch active rides
+        const response = await fetch('/api/driver/rides');
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch assigned rides.');
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to fetch assigned rides.');
+        }
+
+        setRides(data || []);
+      } else {
+        setDriver({
+          profile: profile,
+          car: null,
+          is_not_linked: true,
+          total_rides: 0,
+          rating_avg: '—'
+        });
+        setRides([]);
       }
-
-      setRides(data || []);
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred.');
     } finally {
@@ -114,6 +138,25 @@ export default function DriverDashboard() {
                 <div style={{ color: '#94A3B8', fontSize: '0.75rem', textTransform: 'uppercase' }}>Rating</div>
               </div>
             </div>
+          </div>
+        )}
+
+        {driver && driver.is_not_linked && (
+          <div className="alert alert-info" style={{
+            backgroundColor: '#EFF6FF',
+            border: '1px solid #BFDBFE',
+            color: '#1E40AF',
+            padding: '1.25rem',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: '2rem',
+            lineHeight: '1.6'
+          }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1E3A8A', fontSize: '1.05rem', fontWeight: 700 }}>
+              ⚠️ Profile Setup Pending
+            </h4>
+            <p style={{ margin: 0, fontSize: '0.9rem' }}>
+              Your driver registration is approved! However, the dispatcher has not yet linked a vehicle or license details to your fleet account. Please contact the administrator to complete your profile configuration.
+            </p>
           </div>
         )}
 
