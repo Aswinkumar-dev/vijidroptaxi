@@ -147,8 +147,8 @@ export default function DriverSignup() {
             <p style={{ fontSize: '0.95rem', color: 'var(--secondary)', fontWeight: 600, marginBottom: '0.5rem' }}>
               ⏳ KYC Verification Pending
             </p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-              Thank you for registering with Viji Drop Taxi. Your documents have been submitted successfully and are currently under review. Our admin team will verify your Aadhar card and Driving License within 1–2 business days. You will be able to log in once your KYC is approved.
+            <p style={{ fontSize: '0.95rem', color: 'var(--secondary)', fontWeight: 500, lineHeight: 1.7 }}>
+              Registration successful! Your documents are under review. You'll be able to log in once your KYC is approved.
             </p>
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
