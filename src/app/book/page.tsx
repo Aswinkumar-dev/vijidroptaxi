@@ -526,8 +526,8 @@ function BookFormContent() {
   // Autocomplete states
   const [showPickupSuggestions, setShowPickupSuggestions] = useState(false);
   const [showDropSuggestions, setShowDropSuggestions] = useState(false);
-  const [pickupSuggestions, setPickupSuggestions] = useState<string[]>([]);
-  const [dropSuggestions, setDropSuggestions] = useState<string[]>([]);
+  const [pickupSuggestions, setPickupSuggestions] = useState<{description: string; place_id: string; main_text: string; secondary_text: string}[]>([]);
+  const [dropSuggestions, setDropSuggestions] = useState<{description: string; place_id: string; main_text: string; secondary_text: string}[]>([]);
 
   // Date/Time input Ref
   const dateTimeRef = React.useRef<HTMLInputElement>(null);
@@ -556,36 +556,28 @@ function BookFormContent() {
     }
   }, [searchParams]);
 
-  // Debounced Place suggestions for Pickup
+  // Debounced Google Places suggestions for Pickup
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      if (pickupAddress.trim().length >= 3) {
-        fetchPlaceSuggestions(pickupAddress, setPickupSuggestions);
+      if (pickupAddress.trim().length >= 2) {
+        fetchGooglePlaceSuggestions(pickupAddress, setPickupSuggestions);
       } else {
-        // Fall back to static district suggestions filtered by query
-        const matches = TAMIL_NADU_CITIES.filter(city =>
-          city.toLowerCase().includes(pickupAddress.toLowerCase())
-        );
-        setPickupSuggestions(matches);
+        setPickupSuggestions([]);
       }
-    }, 400);
+    }, 300);
 
     return () => clearTimeout(delayDebounce);
   }, [pickupAddress]);
 
-  // Debounced Place suggestions for Drop
+  // Debounced Google Places suggestions for Drop
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
-      if (dropAddress.trim().length >= 3) {
-        fetchPlaceSuggestions(dropAddress, setDropSuggestions);
+      if (dropAddress.trim().length >= 2) {
+        fetchGooglePlaceSuggestions(dropAddress, setDropSuggestions);
       } else {
-        // Fall back to static district suggestions filtered by query
-        const matches = TAMIL_NADU_CITIES.filter(city =>
-          city.toLowerCase().includes(dropAddress.toLowerCase())
-        );
-        setDropSuggestions(matches);
+        setDropSuggestions([]);
       }
-    }, 400);
+    }, 300);
 
     return () => clearTimeout(delayDebounce);
   }, [dropAddress]);
@@ -606,39 +598,25 @@ function BookFormContent() {
     }
   };
 
-  const fetchPlaceSuggestions = async (query: string, setSuggestions: (s: string[]) => void) => {
+  const fetchGooglePlaceSuggestions = async (
+    query: string,
+    setSuggestions: (s: {description: string; place_id: string; main_text: string; secondary_text: string}[]) => void
+  ) => {
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=in&viewbox=76.0,8.0,80.5,13.8&bounded=1&limit=5`,
-        {
-          headers: {
-            'User-Agent': 'VijiDropTaxi/1.0',
-            'Accept-Language': 'en'
-          }
-        }
-      );
+      const res = await fetch(`/api/places?input=${encodeURIComponent(query)}`);
       if (!res.ok) throw new Error('API request failed');
       const data = await res.json();
-      if (Array.isArray(data)) {
-        const names = data.map((item: any) => {
-          const parts = item.display_name.split(', ');
-          // Clean name, returning e.g. first 3 parts (street/village, district, state)
-          return parts.slice(0, 3).join(', ');
-        });
-        setSuggestions([...new Set(names)]);
+      if (data.predictions) {
+        setSuggestions(data.predictions);
       }
     } catch (err) {
-      console.warn('Nominatim failed, falling back to local districts:', err);
+      console.warn('Google Places API failed, falling back to local districts:', err);
       // Fallback: search local districts
-      const matches = TAMIL_NADU_CITIES.filter(city =>
-        city.toLowerCase().includes(query.toLowerCase())
-      );
+      const matches = TAMIL_NADU_CITIES
+        .filter(city => city.toLowerCase().includes(query.toLowerCase()))
+        .map(city => ({ description: city, place_id: '', main_text: city, secondary_text: 'Tamil Nadu, India' }));
       setSuggestions(matches);
     }
-  };
-
-  const getSuggestions = (input: string, isPickup: boolean) => {
-    return isPickup ? pickupSuggestions : dropSuggestions;
   };
 
   const formatDisplayDateTime = (dateStr: string, timeStr: string) => {
@@ -950,7 +928,7 @@ function BookFormContent() {
                   }}
                   required
                 />
-                {showPickupSuggestions && getSuggestions(pickupAddress, true).length > 0 && (
+                {showPickupSuggestions && pickupSuggestions.length > 0 && (
                   <div style={{
                     position: 'absolute',
                     top: '100%',
@@ -961,31 +939,44 @@ function BookFormContent() {
                     borderRadius: 'var(--radius-sm)',
                     boxShadow: 'var(--shadow-lg)',
                     zIndex: 10,
-                    maxHeight: '200px',
+                    maxHeight: '260px',
                     overflowY: 'auto',
                     marginTop: '0.25rem'
                   }}>
-                    {getSuggestions(pickupAddress, true).map((city, idx) => (
+                    {pickupSuggestions.map((place, idx) => (
                       <div
-                        key={idx}
+                        key={place.place_id || idx}
                         onClick={() => {
-                          setPickupAddress(city);
+                          setPickupAddress(place.description);
                           setShowPickupSuggestions(false);
                         }}
                         style={{
-                          padding: '0.75rem 1rem',
+                          padding: '0.7rem 1rem',
                           cursor: 'pointer',
-                          borderBottom: idx === getSuggestions(pickupAddress, true).length - 1 ? 'none' : '1px solid var(--border-color)',
+                          borderBottom: idx === pickupSuggestions.length - 1 ? 'none' : '1px solid var(--border-color)',
                           fontSize: '0.9rem',
-                          color: 'var(--secondary)',
-                          fontWeight: 500,
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.6rem',
                           textAlign: 'left'
                         }}
                         className="city-suggestion-item"
                       >
-                        📍 {city}
+                        <MapPin size={16} style={{ color: 'var(--text-muted)', marginTop: '2px', flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.9rem' }}>{place.main_text}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1px' }}>{place.secondary_text}</div>
+                        </div>
                       </div>
                     ))}
+                    <div style={{
+                      padding: '0.4rem 1rem',
+                      textAlign: 'right',
+                      borderTop: '1px solid var(--border-color)',
+                      backgroundColor: '#FAFAFA'
+                    }}>
+                      <img src="https://maps.gstatic.com/mapfiles/api-3/images/powered-by-google-on-white3_hdpi.png" alt="Powered by Google" style={{ height: '14px', opacity: 0.7 }} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -1010,7 +1001,7 @@ function BookFormContent() {
                   }}
                   required
                 />
-                {showDropSuggestions && getSuggestions(dropAddress, false).length > 0 && (
+                {showDropSuggestions && dropSuggestions.length > 0 && (
                   <div style={{
                     position: 'absolute',
                     top: '100%',
@@ -1021,31 +1012,44 @@ function BookFormContent() {
                     borderRadius: 'var(--radius-sm)',
                     boxShadow: 'var(--shadow-lg)',
                     zIndex: 10,
-                    maxHeight: '200px',
+                    maxHeight: '260px',
                     overflowY: 'auto',
                     marginTop: '0.25rem'
                   }}>
-                    {getSuggestions(dropAddress, false).map((city, idx) => (
+                    {dropSuggestions.map((place, idx) => (
                       <div
-                        key={idx}
+                        key={place.place_id || idx}
                         onClick={() => {
-                          setDropAddress(city);
+                          setDropAddress(place.description);
                           setShowDropSuggestions(false);
                         }}
                         style={{
-                          padding: '0.75rem 1rem',
+                          padding: '0.7rem 1rem',
                           cursor: 'pointer',
-                          borderBottom: idx === getSuggestions(dropAddress, false).length - 1 ? 'none' : '1px solid var(--border-color)',
+                          borderBottom: idx === dropSuggestions.length - 1 ? 'none' : '1px solid var(--border-color)',
                           fontSize: '0.9rem',
-                          color: 'var(--secondary)',
-                          fontWeight: 500,
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '0.6rem',
                           textAlign: 'left'
                         }}
                         className="city-suggestion-item"
                       >
-                        📍 {city}
+                        <MapPin size={16} style={{ color: 'var(--text-muted)', marginTop: '2px', flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.9rem' }}>{place.main_text}</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1px' }}>{place.secondary_text}</div>
+                        </div>
                       </div>
                     ))}
+                    <div style={{
+                      padding: '0.4rem 1rem',
+                      textAlign: 'right',
+                      borderTop: '1px solid var(--border-color)',
+                      backgroundColor: '#FAFAFA'
+                    }}>
+                      <img src="https://maps.gstatic.com/mapfiles/api-3/images/powered-by-google-on-white3_hdpi.png" alt="Powered by Google" style={{ height: '14px', opacity: 0.7 }} />
+                    </div>
                   </div>
                 )}
               </div>

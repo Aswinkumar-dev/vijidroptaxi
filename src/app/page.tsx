@@ -426,162 +426,115 @@ export default function Home() {
             <p>Follow these 4 simple steps to book a ride and start your journey with us.</p>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '2rem',
-            position: 'relative'
-          }} className="grid-4">
-            {/* Step 1 */}
-            <div className="card card-hover" style={{
-              position: 'relative',
-              padding: '2.5rem 1.5rem 1.5rem 1.5rem',
-              overflow: 'hidden',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-md)'
-            }}>
-              {/* Background Step Number */}
-              <span style={{
-                position: 'absolute',
-                top: '-10px',
-                right: '10px',
-                fontSize: '5rem',
-                fontWeight: 900,
-                color: 'rgba(30, 41, 59, 0.03)',
-                userSelect: 'none',
-                lineHeight: 1
-              }}>01</span>
-              
-              <div style={{
-                backgroundColor: 'rgba(249, 115, 22, 0.08)',
-                width: '50px',
-                height: '50px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--primary)',
-                marginBottom: '1.5rem'
-              }}>
-                <Smartphone size={24} />
+          <div className="timeline-container">
+            {/* Vertical center line */}
+            <div className="timeline-line"></div>
+
+            {/* Step 1 - Left */}
+            <div className="timeline-row timeline-row-left">
+              <div className="timeline-card card card-hover">
+                <span className="timeline-bg-number">01</span>
+                <div style={{
+                  backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--primary)',
+                  marginBottom: '1.5rem'
+                }}>
+                  <Smartphone size={24} />
+                </div>
+                <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>1. Book Your Ride</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                  Select your vehicle type, trip type (one-way or round-trip), payment option, date, and pickup/drop time.
+                </p>
+                <div className="timeline-card-accent"></div>
               </div>
-              <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>1. Book Your Ride</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                Select your vehicle type, trip type (one-way or round-trip), payment option, date, and pickup/drop time.
-              </p>
+              <div className="timeline-circle">01</div>
+              <div className="timeline-spacer"></div>
             </div>
 
-            {/* Step 2 */}
-            <div className="card card-hover" style={{
-              position: 'relative',
-              padding: '2.5rem 1.5rem 1.5rem 1.5rem',
-              overflow: 'hidden',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-md)'
-            }}>
-              <span style={{
-                position: 'absolute',
-                top: '-10px',
-                right: '10px',
-                fontSize: '5rem',
-                fontWeight: 900,
-                color: 'rgba(30, 41, 59, 0.03)',
-                userSelect: 'none',
-                lineHeight: 1
-              }}>02</span>
-              
-              <div style={{
-                backgroundColor: 'rgba(249, 115, 22, 0.08)',
-                width: '50px',
-                height: '50px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--primary)',
-                marginBottom: '1.5rem'
-              }}>
-                <PhoneCall size={24} />
+            {/* Step 2 - Right */}
+            <div className="timeline-row timeline-row-right">
+              <div className="timeline-spacer"></div>
+              <div className="timeline-circle">02</div>
+              <div className="timeline-card card card-hover">
+                <span className="timeline-bg-number">02</span>
+                <div style={{
+                  backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--primary)',
+                  marginBottom: '1.5rem'
+                }}>
+                  <PhoneCall size={24} />
+                </div>
+                <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>2. Driver Assignment</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                  Once submitted, our dispatch coordinator will call you directly to verify vehicle availability and confirm details.
+                </p>
+                <div className="timeline-card-accent"></div>
               </div>
-              <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>2. Driver Assignment</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                Once submitted, our dispatch coordinator will call you directly to verify vehicle availability and confirm details.
-              </p>
             </div>
 
-            {/* Step 3 */}
-            <div className="card card-hover" style={{
-              position: 'relative',
-              padding: '2.5rem 1.5rem 1.5rem 1.5rem',
-              overflow: 'hidden',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-md)'
-            }}>
-              <span style={{
-                position: 'absolute',
-                top: '-10px',
-                right: '10px',
-                fontSize: '5rem',
-                fontWeight: 900,
-                color: 'rgba(30, 41, 59, 0.03)',
-                userSelect: 'none',
-                lineHeight: 1
-              }}>03</span>
-              
-              <div style={{
-                backgroundColor: 'rgba(249, 115, 22, 0.08)',
-                width: '50px',
-                height: '50px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--primary)',
-                marginBottom: '1.5rem'
-              }}>
-                <KeyRound size={24} />
+            {/* Step 3 - Left */}
+            <div className="timeline-row timeline-row-left">
+              <div className="timeline-card card card-hover">
+                <span className="timeline-bg-number">03</span>
+                <div style={{
+                  backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--primary)',
+                  marginBottom: '1.5rem'
+                }}>
+                  <KeyRound size={24} />
+                </div>
+                <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>3. Get Your OTP</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                  Once the trip is confirmed, a secure OTP will be displayed directly on your booking status screen.
+                </p>
+                <div className="timeline-card-accent"></div>
               </div>
-              <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>3. Get Your OTP</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                Once the trip is confirmed, a secure OTP (One Time Password) will be displayed directly on your booking status screen.
-              </p>
+              <div className="timeline-circle">03</div>
+              <div className="timeline-spacer"></div>
             </div>
 
-            {/* Step 4 */}
-            <div className="card card-hover" style={{
-              position: 'relative',
-              padding: '2.5rem 1.5rem 1.5rem 1.5rem',
-              overflow: 'hidden',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-md)'
-            }}>
-              <span style={{
-                position: 'absolute',
-                top: '-10px',
-                right: '10px',
-                fontSize: '5rem',
-                fontWeight: 900,
-                color: 'rgba(30, 41, 59, 0.03)',
-                userSelect: 'none',
-                lineHeight: 1
-              }}>04</span>
-              
-              <div style={{
-                backgroundColor: 'rgba(249, 115, 22, 0.08)',
-                width: '50px',
-                height: '50px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: '1.5rem'
-              }}>
-                <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '38px', height: '38px', objectFit: 'contain', filter: 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)' }} />
+            {/* Step 4 - Right */}
+            <div className="timeline-row timeline-row-right">
+              <div className="timeline-spacer"></div>
+              <div className="timeline-circle">04</div>
+              <div className="timeline-card card card-hover">
+                <span className="timeline-bg-number">04</span>
+                <div style={{
+                  backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem'
+                }}>
+                  <img src="/assets/car%20-%20home%20page.png" alt="Car Icon" style={{ width: '38px', height: '38px', objectFit: 'contain', filter: 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)' }} />
+                </div>
+                <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>4. Start Your Journey</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                  Share the OTP with your driver upon arrival. Once verified in the driver's app, your journey commences safely.
+                </p>
+                <div className="timeline-card-accent"></div>
               </div>
-              <h4 style={{ fontSize: '1.15rem', color: 'var(--secondary)', marginBottom: '0.75rem', fontWeight: 700 }}>4. Start Your Journey</h4>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                Share the OTP with your driver upon arrival. Once verified in the driver's app, your journey commences safely.
-              </p>
             </div>
           </div>
         </div>

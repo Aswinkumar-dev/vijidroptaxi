@@ -948,40 +948,173 @@ p {
 .footer-link:hover {
   color: var(--primary) !important;
 }
+/* Vertical Zigzag Timeline */
+.timeline-container {
+  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem 0;
+}
 
-/* WhatsApp Floating Button */
-.whatsapp-float-container {
+.timeline-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(to bottom, var(--primary), rgba(249, 115, 22, 0.15));
+  transform: translateX(-50%);
+  border-radius: 3px;
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: 1fr 50px 1fr;
+  align-items: center;
+  margin-bottom: 2.5rem;
+  position: relative;
+}
+
+.timeline-row:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-card {
+  position: relative;
+  padding: 2rem 1.5rem 1.8rem 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.timeline-card-accent {
+  position: absolute;
+  bottom: 0;
+  left: 1.5rem;
+  right: 1.5rem;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), rgba(249, 115, 22, 0.3));
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.timeline-bg-number {
+  position: absolute;
+  top: -10px;
+  right: 10px;
+  font-size: 5rem;
+  font-weight: 900;
+  color: rgba(30, 41, 59, 0.03);
+  user-select: none;
+  line-height: 1;
+}
+
+.timeline-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  z-index: 2;
+  box-shadow: 0 0 0 5px white, 0 0 0 7px rgba(249, 115, 22, 0.2);
+  flex-shrink: 0;
+  justify-self: center;
+}
+
+.timeline-spacer {
+  /* Empty space on the opposite side */
+}
+
+@media (max-width: 768px) {
+  .timeline-line {
+    left: 24px;
+  }
+
+  .timeline-row {
+    grid-template-columns: 50px 1fr;
+    gap: 1rem;
+  }
+
+  .timeline-row-left,
+  .timeline-row-right {
+    direction: ltr;
+  }
+
+  .timeline-row-left .timeline-spacer,
+  .timeline-row-right .timeline-spacer {
+    display: none;
+  }
+
+  .timeline-row-left {
+    grid-template-columns: 50px 1fr;
+  }
+
+  .timeline-row-left .timeline-card {
+    order: 2;
+  }
+
+  .timeline-row-left .timeline-circle {
+    order: 1;
+  }
+
+  .timeline-row-right {
+    grid-template-columns: 50px 1fr;
+  }
+
+  .timeline-row-right .timeline-spacer {
+    display: none;
+  }
+
+  .timeline-row-right .timeline-circle {
+    order: 1;
+  }
+
+  .timeline-row-right .timeline-card {
+    order: 2;
+  }
+
+  .timeline-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Floating Action Buttons (Call + WhatsApp) */
+.floating-buttons-container {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.9rem;
   z-index: 9999;
+}
+
+.call-float-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.5);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
   text-decoration: none;
-  font-family: var(--font-secondary);
+  animation: call-pulse 2s infinite;
 }
 
-.whatsapp-tooltip {
-  background-color: #25D366;
-  color: white;
-  padding: 0.6rem 1.2rem;
-  border-radius: var(--radius-full);
-  font-size: 0.9rem;
-  font-weight: 700;
-  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
-  white-space: nowrap;
-  animation: bounce-horizontal 2s infinite, glow-pulse 2s infinite;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-  opacity: 1;
-}
-
-.whatsapp-tooltip.hidden {
-  opacity: 0;
-  transform: translateX(10px);
-  pointer-events: none;
+.call-float-btn:hover {
+  transform: scale(1.12) rotate(-8deg);
+  box-shadow: 0 6px 28px rgba(249, 115, 22, 0.75);
 }
 
 .whatsapp-icon-btn {
@@ -994,8 +1127,9 @@ p {
   justify-content: center;
   box-shadow: 0 4px 20px rgba(37, 211, 102, 0.5);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  position: relative;
-  animation: button-pulse 2s infinite;
+  cursor: pointer;
+  text-decoration: none;
+  animation: whatsapp-pulse 2s infinite;
 }
 
 .whatsapp-icon-btn img {
@@ -1004,25 +1138,20 @@ p {
   object-fit: contain;
 }
 
-.whatsapp-float-container:hover .whatsapp-icon-btn {
-  transform: scale(1.1) rotate(8deg);
-  box-shadow: 0 6px 25px rgba(37, 211, 102, 0.7);
+.whatsapp-icon-btn:hover {
+  transform: scale(1.12) rotate(8deg);
+  box-shadow: 0 6px 28px rgba(37, 211, 102, 0.75);
 }
 
-@keyframes bounce-horizontal {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(-5px); }
+@keyframes call-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6); }
+  70% { box-shadow: 0 0 0 14px rgba(249, 115, 22, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
 }
 
-@keyframes glow-pulse {
-  0% { box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
-  50% { box-shadow: 0 4px 25px rgba(37, 211, 102, 0.8); }
-  100% { box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
-}
-
-@keyframes button-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
-  70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
+@keyframes whatsapp-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.6); }
+  70% { box-shadow: 0 0 0 14px rgba(37, 211, 102, 0); }
   100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
 }
 

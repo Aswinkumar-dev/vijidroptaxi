@@ -1,22 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { usePathname } from 'next/navigation';
+import { Phone } from 'lucide-react';
 
 export default function WhatsAppFloat() {
   const pathname = usePathname();
-  const phoneNumber = '916382882740'; // 6382882740 with +91 country prefix
-  const message = encodeURIComponent("Hello! I want to book a ride with Viji Drop Taxi.");
+  const phoneNumber = '916382882740';
+  const callNumber = '+916382882740';
+  const message = encodeURIComponent(
+`Hello Viji Drop Taxi,
+
+I would like to book a taxi.
+
+Pickup:
+Destination:
+Travel Date:
+
+Please share the estimated fare and vehicle availability.`
+  );
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
-
-  const [showTooltip, setShowTooltip] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowTooltip(prev => !prev);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Hide on booking and ride tracking pages
   if (pathname?.startsWith('/book') || pathname?.startsWith('/rides')) {
@@ -24,20 +27,26 @@ export default function WhatsAppFloat() {
   }
 
   return (
-    <a 
-      href={whatsappUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="whatsapp-float-container"
-      title="Book a ride on WhatsApp"
-    >
-      <div className={`whatsapp-tooltip ${showTooltip ? '' : 'hidden'}`}>
-        Book your ride!
-      </div>
-      <div className="whatsapp-icon-btn">
+    <div className="floating-buttons-container">
+      {/* Call Button */}
+      <a
+        href={`tel:${callNumber}`}
+        className="call-float-btn"
+        title="Call us now"
+      >
+        <Phone size={26} strokeWidth={2.5} />
+      </a>
+
+      {/* WhatsApp Button */}
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="whatsapp-icon-btn"
+        title="Chat on WhatsApp"
+      >
         <img src="/assets/whatsapp.png" alt="WhatsApp logo" />
-      </div>
-    </a>
+      </a>
+    </div>
   );
 }
-
