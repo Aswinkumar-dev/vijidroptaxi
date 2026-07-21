@@ -40,6 +40,7 @@ export default function Footer() {
               <Link href="/book" className="footer-link">Book a Ride</Link>
               <Link href="/privacy" className="footer-link">Privacy Policy</Link>
               <Link href="/cancellation" className="footer-link">Cancellation Policy</Link>
+              <Link href="/faq" className="footer-link">FAQ</Link>
             </div>
           </div>
 
