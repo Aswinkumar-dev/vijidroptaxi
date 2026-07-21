@@ -51,7 +51,7 @@ export default function Footer() {
               <span>One-way Intercity Drops</span>
               <span>Round-trip Outstation Rides</span>
               <span>Airport Pickups & Drops</span>
-              <span>Premium Fleet (Sedan, SUV, Hatchback)</span>
+              <span>Premium Fleet (Sedan, SUV, Innova)</span>
             </div>
           </div>
 

@@ -1363,3 +1363,205 @@ p {
   border: 1px solid rgba(249, 115, 22, 0.2) !important;
 }
 
+/* Premium Vehicle Selection Cards */
+.vehicle-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+  padding-top: 1rem;
+}
+
+.vehicle-card-button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: inherit;
+  font-family: inherit;
+}
+
+.vehicle-card-inner {
+  position: relative;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 2.2rem 1rem 1.5rem 1rem;
+  background-color: #f8fafc;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 190px;
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.vehicle-card-inner:hover {
+  border-color: #cbd5e1;
+  background-color: #f1f5f9;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.vehicle-card-button.active .vehicle-card-inner {
+  border-color: var(--primary);
+  background-color: rgba(249, 115, 22, 0.04);
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.12);
+  border-width: 2px;
+}
+
+.vehicle-tag {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #64748b;
+  color: white;
+  padding: 0.3rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.vehicle-card-button.active .vehicle-tag {
+  background-color: var(--primary);
+}
+
+.vehicle-img-wrapper {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  width: 100%;
+}
+
+.vehicle-img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.06));
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.vehicle-img.sedan-img {
+  transform: scale(1.32);
+}
+.vehicle-card-inner:hover .vehicle-img.sedan-img {
+  transform: scale(1.38);
+}
+
+.vehicle-img.suv-img {
+  transform: scale(1.12);
+}
+.vehicle-card-inner:hover .vehicle-img.suv-img {
+  transform: scale(1.18);
+}
+
+.vehicle-img.innova-img {
+  transform: scale(0.84);
+}
+.vehicle-card-inner:hover .vehicle-img.innova-img {
+  transform: scale(0.90);
+}
+
+.vehicle-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--secondary);
+  margin-bottom: 0.15rem;
+  letter-spacing: 0.02em;
+}
+
+.vehicle-passengers {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+}
+
+.vehicle-price {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--primary);
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.1rem;
+}
+
+.vehicle-price-unit {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Premium Ride Type Layout */
+.ridetype-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.ridetype-button {
+  background: white;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  text-align: center;
+  font-family: inherit;
+}
+
+.ridetype-button:hover {
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+}
+
+.ridetype-button.active {
+  border-color: var(--primary);
+  background-color: rgba(249, 115, 22, 0.04);
+  border-width: 2px;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.08);
+}
+
+.ridetype-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--secondary);
+}
+
+.ridetype-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 640px) {
+  .vehicle-selector-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding-top: 1.5rem;
+  }
+  .vehicle-card-inner {
+    min-height: 180px;
+    padding: 2rem 1rem 1.25rem 1rem;
+  }
+}
+
+

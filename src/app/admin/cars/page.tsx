@@ -18,7 +18,7 @@ export default function AdminCars() {
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [color, setColor] = useState('');
-  const [carType, setCarType] = useState<'hatchback' | 'sedan' | 'suv'>('sedan');
+  const [carType, setCarType] = useState<'sedan' | 'suv' | 'innova'>('sedan');
   const [seatingCapacity, setSeatingCapacity] = useState(4);
   const [submitting, setSubmitting] = useState(false);
 
@@ -203,7 +203,7 @@ export default function AdminCars() {
             
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ color: 'var(--secondary)' }}>Add Vehicle to Fleet</h3>
-              <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Register a new hatchback, sedan, or SUV</p>
+              <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Register a new Sedan, SUV, or Innova</p>
             </div>
 
             <form onSubmit={handleAddSubmit}>
@@ -278,9 +278,9 @@ export default function AdminCars() {
                   onChange={(e: any) => setCarType(e.target.value)}
                   required
                 >
-                  <option value="hatchback">Hatchback (Budget)</option>
                   <option value="sedan">Sedan (Comfort)</option>
                   <option value="suv">SUV (Spacious)</option>
+                  <option value="innova">Innova (Premium)</option>
                 </select>
               </div>
 

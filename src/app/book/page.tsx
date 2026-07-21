@@ -54,50 +54,7 @@ const TAMIL_NADU_CITIES = [
   'Chengalpattu'
 ];
 
-const HatchbackIcon = ({ active }: { active: boolean }) => (
-  <img
-    src="/assets/hatchback.png"
-    alt="Hatchback"
-    className="car-icon-hatchback"
-    style={{
-      objectFit: 'contain',
-      filter: active 
-        ? 'brightness(0) invert(1)' 
-        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
-      transition: 'filter 0.3s'
-    }}
-  />
-);
 
-const SedanIcon = ({ active }: { active: boolean }) => (
-  <img
-    src="/assets/sedan-car.png"
-    alt="Sedan"
-    className="car-icon-sedan"
-    style={{
-      objectFit: 'contain',
-      filter: active 
-        ? 'brightness(0) invert(1)' 
-        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
-      transition: 'filter 0.3s'
-    }}
-  />
-);
-
-const SUVIcon = ({ active }: { active: boolean }) => (
-  <img
-    src="/assets/suv-car.png"
-    alt="SUV"
-    className="car-icon-suv"
-    style={{
-      objectFit: 'contain',
-      filter: active 
-        ? 'brightness(0) invert(1)' 
-        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
-      transition: 'filter 0.3s'
-    }}
-  />
-);
 
 interface CustomDateTimePickerProps {
   label: string;
@@ -501,7 +458,7 @@ function BookFormContent() {
 
   const initialReturnDT = getInitialReturnDateTime();
 
-  const [carType, setCarType] = useState<'hatchback' | 'sedan' | 'suv'>('sedan');
+  const [carType, setCarType] = useState<'sedan' | 'suv' | 'innova'>('sedan');
   const [rideType, setRideType] = useState<'one_way' | 'round_trip'>('one_way');
   const [pickupAddress, setPickupAddress] = useState('');
   const [dropAddress, setDropAddress] = useState('');
@@ -545,8 +502,8 @@ function BookFormContent() {
     const paramRide = searchParams.get('ride_type');
     const paramDist = searchParams.get('distance');
 
-    if (paramCar === 'hatchback' || paramCar === 'sedan' || paramCar === 'suv') {
-      setCarType(paramCar);
+    if (paramCar === 'sedan' || paramCar === 'suv' || paramCar === 'innova') {
+      setCarType(paramCar as any);
     }
     if (paramRide === 'one_way' || paramRide === 'round_trip') {
       setRideType(paramRide);
@@ -604,7 +561,10 @@ function BookFormContent() {
   ) => {
     try {
       const res = await fetch(`/api/places?input=${encodeURIComponent(query)}`);
-      if (!res.ok) throw new Error('API request failed');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(`API request failed: ${res.status} - ${errorData.error || ''} (${errorData.status || ''})`);
+      }
       const data = await res.json();
       if (data.predictions) {
         setSuggestions(data.predictions);
@@ -854,53 +814,82 @@ function BookFormContent() {
             
             {/* Car Selection */}
             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-              <label className="form-label">Car Type</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                {(['hatchback', 'sedan', 'suv'] as const).map(type => (
-                  <button
-                    key={type}
-                    type="button"
-                    className={`btn ${carType === type ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{
-                      border: carType === type ? '1px solid var(--primary)' : '1px solid #94A3B8',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.1rem',
-                      padding: '0.2rem 0.1rem',
-                      height: '82px'
-                    }}
-                    onClick={() => setCarType(type)}
-                  >
-                    {type === 'hatchback' && <HatchbackIcon active={carType === type} />}
-                    {type === 'sedan' && <SedanIcon active={carType === type} />}
-                    {type === 'suv' && <SUVIcon active={carType === type} />}
-                    <span>{type === 'suv' ? 'SUV' : type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                  </button>
-                ))}
+              <label className="form-label">Select Vehicle</label>
+              <div className="vehicle-selector-grid">
+                {(['sedan', 'suv', 'innova'] as const).map(type => {
+                  const isActive = carType === type;
+                  const details = {
+                    sedan: {
+                      name: 'SEDAN',
+                      passengers: '4 Passengers',
+                      basePrice: 15, // Display default With A/C rates as show in the image
+                      tag: 'Most Booked',
+                      img: '/assets/sedan car.png'
+                    },
+                    suv: {
+                      name: 'SUV',
+                      passengers: '6 Passengers',
+                      basePrice: 20,
+                      tag: 'Extra Space',
+                      img: '/assets/SUV car.png'
+                    },
+                    innova: {
+                      name: 'INNOVA',
+                      passengers: '7 Passengers',
+                      basePrice: 21,
+                      tag: 'Executive',
+                      img: '/assets/Innova car.png'
+                    }
+                  }[type];
+
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      className={`vehicle-card-button ${isActive ? 'active' : ''}`}
+                      onClick={() => setCarType(type)}
+                    >
+                      <div className="vehicle-card-inner">
+                        <span className="vehicle-tag">
+                          {isActive ? '✓ Selected' : details.tag}
+                        </span>
+                        <div className="vehicle-img-wrapper">
+                          <img src={details.img} alt={details.name} className={`vehicle-img ${type}-img`} />
+                        </div>
+                        <div>
+                          <div className="vehicle-name">{details.name}</div>
+                          <div className="vehicle-passengers">{details.passengers}</div>
+                        </div>
+                        <div className="vehicle-price">
+                          ₹{details.basePrice}
+                          <span className="vehicle-price-unit">/km</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Ride Type selection */}
             <div className="form-group" style={{ marginBottom: '1.5rem' }}>
               <label className="form-label">Ride Type</label>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="ridetype-grid">
                 <button
                   type="button"
-                  className={`btn ${rideType === 'one_way' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ border: rideType === 'one_way' ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
+                  className={`ridetype-button ${rideType === 'one_way' ? 'active' : ''}`}
                   onClick={() => setRideType('one_way')}
                 >
-                  One Way
+                  <span className="ridetype-title">One Way</span>
+                  <span className="ridetype-subtitle">130 KM Minimum Billing</span>
                 </button>
                 <button
                   type="button"
-                  className={`btn ${rideType === 'round_trip' ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{ border: rideType === 'round_trip' ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
+                  className={`ridetype-button ${rideType === 'round_trip' ? 'active' : ''}`}
                   onClick={() => setRideType('round_trip')}
                 >
-                  Round Trip
+                  <span className="ridetype-title">Round Trip</span>
+                  <span className="ridetype-subtitle">250 KM / Day Minimum</span>
                 </button>
               </div>
             </div>

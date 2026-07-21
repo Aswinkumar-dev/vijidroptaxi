@@ -50,9 +50,10 @@ export async function POST(req: NextRequest) {
       per_km_rate = Number(fareRule.per_km_rate);
       driver_allowance = Number(fareRule.driver_allowance || 0);
     } else {
-      if (car_type === 'hatchback') {
-        base_fare = 80;
-        per_km_rate = 12;
+      if (car_type === 'innova') {
+        base_fare = 180;
+        per_km_rate = 21;
+        if (ride_type === 'round_trip') driver_allowance = 350;
       } else if (car_type === 'suv') {
         base_fare = 150;
         per_km_rate = 20;
@@ -64,7 +65,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const calculated_distance = Number(distance_km);
+    const calculated_distance = ride_type === 'one_way' 
+      ? Math.max(Number(distance_km), 130) 
+      : Math.max(Number(distance_km) * 2, 250);
     const total_fare = base_fare + (calculated_distance * per_km_rate) + driver_allowance;
 
     const notesStr = return_scheduled_at

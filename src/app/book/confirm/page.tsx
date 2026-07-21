@@ -56,23 +56,29 @@ function ConfirmBookingContent() {
         rate = Number(data.per_km_rate);
         allowance = Number(data.driver_allowance || 0);
       } else {
-        if (carType === 'hatchback') {
-          base = 80; rate = 12;
+        if (carType === 'innova') {
+          base = 180; rate = 21;
+          if (rideType === 'round_trip') allowance = 350;
         } else if (carType === 'suv') {
           base = 150; rate = 20;
           if (rideType === 'round_trip') allowance = 300;
         } else {
+          // sedan
           base = 100; rate = 15;
           if (rideType === 'round_trip') allowance = 250;
         }
       }
 
+      const billedDistance = rideType === 'one_way' 
+        ? Math.max(distanceKm, 130) 
+        : Math.max(distanceKm * 2, 250);
+
       setCalculation({
         baseFare: base,
         perKmRate: rate,
         allowance,
-        distanceKm,
-        totalFare: base + (distanceKm * rate) + allowance
+        distanceKm: billedDistance,
+        totalFare: base + (billedDistance * rate) + allowance
       });
       setLoading(false);
     };

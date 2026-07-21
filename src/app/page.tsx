@@ -4,53 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Car, MapPin, ShieldCheck, Clock, Award, Star, Phone, Mail, ArrowRight, Calculator, Smartphone, PhoneCall, KeyRound } from 'lucide-react';
-const HatchbackIcon = ({ active }: { active: boolean }) => (
-  <img
-    src="/assets/hatchback.png"
-    alt="Hatchback"
-    className="car-icon-hatchback"
-    style={{
-      objectFit: 'contain',
-      filter: active 
-        ? 'brightness(0) invert(1)' 
-        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
-      transition: 'filter 0.3s'
-    }}
-  />
-);
 
-const SedanIcon = ({ active }: { active: boolean }) => (
-  <img
-    src="/assets/sedan-car.png"
-    alt="Sedan"
-    className="car-icon-sedan"
-    style={{
-      objectFit: 'contain',
-      filter: active 
-        ? 'brightness(0) invert(1)' 
-        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
-      transition: 'filter 0.3s'
-    }}
-  />
-);
-
-const SUVIcon = ({ active }: { active: boolean }) => (
-  <img
-    src="/assets/suv-car.png"
-    alt="SUV"
-    className="car-icon-suv"
-    style={{
-      objectFit: 'contain',
-      filter: active 
-        ? 'brightness(0) invert(1)' 
-        : 'invert(53%) sepia(85%) saturate(1518%) hue-rotate(346deg) brightness(101%) contrast(96%)',
-      transition: 'filter 0.3s'
-    }}
-  />
-);
 export default function Home() {
   const [distance, setDistance] = useState<number>(50);
-  const [carType, setCarType] = useState<'hatchback' | 'sedan' | 'suv'>('sedan');
+  const [carType, setCarType] = useState<'sedan' | 'suv' | 'innova'>('sedan');
   const [rideType, setRideType] = useState<'one_way' | 'round_trip'>('one_way');
   const [hasAC, setHasAC] = useState<boolean>(true);
   const [fareRules, setFareRules] = useState<any[]>([]);
@@ -116,11 +73,11 @@ export default function Home() {
 
   // Get active rate per KM based on car type and A/C selection
   const getPerKmRate = () => {
-    if (carType === 'hatchback') {
-      return hasAC ? 13 : 12;
-    } else if (carType === 'sedan') {
+    if (carType === 'sedan') {
       return hasAC ? 15 : 14;
     } else if (carType === 'suv') {
+      return hasAC ? 20 : 19;
+    } else if (carType === 'innova') {
       return hasAC ? 21 : 20;
     }
     return 15;
@@ -129,10 +86,20 @@ export default function Home() {
   const perKmRate = getPerKmRate();
 
   useEffect(() => {
-    let calculatedFare = distance * perKmRate;
-    if (rideType === 'round_trip') {
-      calculatedFare = calculatedFare * 2;
+    let billedDistance = distance;
+    let calculatedFare = 0;
+    
+    if (rideType === 'one_way') {
+      billedDistance = Math.max(distance, 130);
+      calculatedFare = billedDistance * perKmRate;
+    } else {
+      // Round trip: distance in slider is one-way distance. Total distance is distance * 2.
+      // Total minimum billing distance is 250 KM.
+      const totalDist = distance * 2;
+      billedDistance = Math.max(totalDist, 250);
+      calculatedFare = billedDistance * perKmRate;
     }
+    
     setEstimate(calculatedFare);
   }, [distance, carType, rideType, hasAC, perKmRate]);
 
@@ -242,7 +209,7 @@ export default function Home() {
                 <ShieldCheck size={32} />
               </div>
               <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>Verified Fleet</h3>
-              <p>Choose from clean, well-maintained Hatchbacks, Sedans, and SUVs for a safe and comfortable journey.</p>
+              <p>Choose from clean, well-maintained Sedans, SUVs, and Innovas for a safe and comfortable journey.</p>
             </div>
           </div>
         </div>
@@ -273,52 +240,81 @@ export default function Home() {
               </h3>
               
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label">Car Type</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                  {(['hatchback', 'sedan', 'suv'] as const).map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`btn ${carType === type ? 'btn-primary' : 'btn-ghost'}`}
-                      style={{
-                        border: carType === type ? '1px solid var(--primary)' : '1px solid #94A3B8',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.1rem',
-                        padding: '0.2rem 0.1rem',
-                        height: '82px'
-                      }}
-                      onClick={() => setCarType(type)}
-                    >
-                      {type === 'hatchback' && <HatchbackIcon active={carType === type} />}
-                      {type === 'sedan' && <SedanIcon active={carType === type} />}
-                      {type === 'suv' && <SUVIcon active={carType === type} />}
-                      <span>{type === 'suv' ? 'SUV' : type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                    </button>
-                  ))}
+                <label className="form-label">Select Vehicle</label>
+                <div className="vehicle-selector-grid">
+                  {(['sedan', 'suv', 'innova'] as const).map(type => {
+                    const isActive = carType === type;
+                    const details = {
+                      sedan: {
+                        name: 'SEDAN',
+                        passengers: '4 Passengers',
+                        basePrice: hasAC ? 15 : 14,
+                        tag: 'Most Booked',
+                        img: '/assets/sedan car.png'
+                      },
+                      suv: {
+                        name: 'SUV',
+                        passengers: '6 Passengers',
+                        basePrice: hasAC ? 20 : 19,
+                        tag: 'Extra Space',
+                        img: '/assets/SUV car.png'
+                      },
+                      innova: {
+                        name: 'INNOVA',
+                        passengers: '7 Passengers',
+                        basePrice: hasAC ? 21 : 20,
+                        tag: 'Executive',
+                        img: '/assets/Innova car.png'
+                      }
+                    }[type];
+
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        className={`vehicle-card-button ${isActive ? 'active' : ''}`}
+                        onClick={() => setCarType(type)}
+                      >
+                        <div className="vehicle-card-inner">
+                          <span className="vehicle-tag">
+                            {isActive ? '✓ Selected' : details.tag}
+                          </span>
+                          <div className="vehicle-img-wrapper">
+                            <img src={details.img} alt={details.name} className={`vehicle-img ${type}-img`} />
+                          </div>
+                          <div>
+                            <div className="vehicle-name">{details.name}</div>
+                            <div className="vehicle-passengers">{details.passengers}</div>
+                          </div>
+                          <div className="vehicle-price">
+                            ₹{details.basePrice}
+                            <span className="vehicle-price-unit">/km</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label">Ride Type</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div className="ridetype-grid">
                   <button
                     type="button"
-                    className={`btn btn-sm ${rideType === 'one_way' ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ border: rideType === 'one_way' ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
+                    className={`ridetype-button ${rideType === 'one_way' ? 'active' : ''}`}
                     onClick={() => setRideType('one_way')}
                   >
-                    One Way Drop
+                    <span className="ridetype-title">One Way</span>
+                    <span className="ridetype-subtitle">130 KM Minimum Billing</span>
                   </button>
                   <button
                     type="button"
-                    className={`btn btn-sm ${rideType === 'round_trip' ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ border: rideType === 'round_trip' ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
+                    className={`ridetype-button ${rideType === 'round_trip' ? 'active' : ''}`}
                     onClick={() => setRideType('round_trip')}
                   >
-                    Round Trip
+                    <span className="ridetype-title">Round Trip</span>
+                    <span className="ridetype-subtitle">250 KM / Day Minimum</span>
                   </button>
                 </div>
               </div>
@@ -403,9 +399,9 @@ export default function Home() {
               </div>
               <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: '2rem', maxWidth: '300px', lineHeight: '1.5' }}>
                 {rideType === 'one_way' ? (
-                  `Estimated for ${distance} KM at ₹${perKmRate}/KM using a ${carType} (${hasAC ? 'With A/C' : 'Without A/C'}) for a one-way drop.`
+                  `Estimated for ${distance < 130 ? '130 KM (Min Billing)' : `${distance} KM`} at ₹${perKmRate}/KM using a ${carType.toUpperCase()} (${hasAC ? 'With A/C' : 'Without A/C'}) for a one-way drop.`
                 ) : (
-                  `Estimated for ${distance} KM one-way (total ${distance * 2} KM round-trip) at ₹${perKmRate}/KM using a ${carType} (${hasAC ? 'With A/C' : 'Without A/C'}).`
+                  `Estimated for ${distance * 2 < 250 ? '250 KM (Min Billing)' : `${distance * 2} KM total`} at ₹${perKmRate}/KM using a ${carType.toUpperCase()} (${hasAC ? 'With A/C' : 'Without A/C'}).`
                 )}
               </p>
               <Link href={`/book?car_type=${carType}&ride_type=${rideType}&distance=${distance}&has_ac=${hasAC}`} className="btn btn-primary" style={{ width: '100%' }}>
