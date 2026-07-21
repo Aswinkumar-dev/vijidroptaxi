@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -61,10 +62,22 @@ export default function Footer() {
               Contact Us
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem', color: '#94A3B8' }}>
-              <span>📍 16, Somavur Kizhpathi Street, Kalinjukuppam, Viluppuram, Tamil Nadu</span>
-              <span>📞 +91 63828 82740 / +91 63848 19045</span>
-              <span>✉️ vijaykumarr782@gmail.com</span>
-              <span>⏰ 24/7 Service Available</span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+                <MapPin size={16} style={{ color: 'var(--primary)', marginTop: '0.2rem', flexShrink: 0 }} />
+                <span>16, Somavur Kizhpathi Street, Kalinjukuppam, Viluppuram, Tamil Nadu</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Phone size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <span>+91 63828 82740 / +91 63848 19045</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Mail size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <span>vijaykumarr782@gmail.com</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Clock size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                <span>24/7 Service Available</span>
+              </div>
             </div>
           </div>
         </div>

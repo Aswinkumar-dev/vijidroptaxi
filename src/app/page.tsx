@@ -9,7 +9,7 @@ export default function Home() {
   const [distance, setDistance] = useState<number>(50);
   const [carType, setCarType] = useState<'sedan' | 'suv' | 'innova'>('sedan');
   const [rideType, setRideType] = useState<'one_way' | 'round_trip'>('one_way');
-  const [hasAC, setHasAC] = useState<boolean>(true);
+
   const [fareRules, setFareRules] = useState<any[]>([]);
   const [estimate, setEstimate] = useState<number>(0);
   const [contactName, setContactName] = useState('');
@@ -71,14 +71,14 @@ export default function Home() {
     fetchFareRules();
   }, []);
 
-  // Get active rate per KM based on car type and A/C selection
+  // Get active rate per KM based on car type and ride type
   const getPerKmRate = () => {
     if (carType === 'sedan') {
-      return hasAC ? 15 : 14;
+      return rideType === 'one_way' ? 15 : 14;
     } else if (carType === 'suv') {
-      return hasAC ? 20 : 19;
+      return rideType === 'one_way' ? 20 : 19;
     } else if (carType === 'innova') {
-      return hasAC ? 21 : 20;
+      return rideType === 'one_way' ? 21 : 20;
     }
     return 15;
   };
@@ -101,7 +101,7 @@ export default function Home() {
     }
     
     setEstimate(calculatedFare);
-  }, [distance, carType, rideType, hasAC, perKmRate]);
+  }, [distance, carType, rideType, perKmRate]);
 
   return (
     <div style={{ fontFamily: 'var(--font-secondary)' }}>
@@ -248,21 +248,21 @@ export default function Home() {
                       sedan: {
                         name: 'SEDAN',
                         passengers: '4 Passengers',
-                        basePrice: hasAC ? 15 : 14,
+                        basePrice: rideType === 'one_way' ? 15 : 14,
                         tag: 'Most Booked',
                         img: '/assets/sedan car.png'
                       },
                       suv: {
                         name: 'SUV',
                         passengers: '6 Passengers',
-                        basePrice: hasAC ? 20 : 19,
+                        basePrice: rideType === 'one_way' ? 20 : 19,
                         tag: 'Extra Space',
                         img: '/assets/SUV car.png'
                       },
                       innova: {
                         name: 'INNOVA',
                         passengers: '7 Passengers',
-                        basePrice: hasAC ? 21 : 20,
+                        basePrice: rideType === 'one_way' ? 21 : 20,
                         tag: 'Executive',
                         img: '/assets/Innova car.png'
                       }
@@ -315,28 +315,6 @@ export default function Home() {
                   >
                     <span className="ridetype-title">Round Trip</span>
                     <span className="ridetype-subtitle">250 KM / Day Minimum</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label">A/C Option</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  <button
-                    type="button"
-                    className={`btn btn-sm ${hasAC ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ border: hasAC ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
-                    onClick={() => setHasAC(true)}
-                  >
-                    With A/C
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-sm ${!hasAC ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ border: !hasAC ? '1px solid var(--primary)' : '1px solid #94A3B8' }}
-                    onClick={() => setHasAC(false)}
-                  >
-                    Without A/C
                   </button>
                 </div>
               </div>
@@ -399,12 +377,12 @@ export default function Home() {
               </div>
               <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginBottom: '2rem', maxWidth: '300px', lineHeight: '1.5' }}>
                 {rideType === 'one_way' ? (
-                  `Estimated for ${distance < 130 ? '130 KM (Min Billing)' : `${distance} KM`} at ₹${perKmRate}/KM using a ${carType.toUpperCase()} (${hasAC ? 'With A/C' : 'Without A/C'}) for a one-way drop.`
+                  `Estimated for ${distance < 130 ? '130 KM (Min Billing)' : `${distance} KM`} at ₹${perKmRate}/KM using a ${carType.toUpperCase()} for a one-way drop.`
                 ) : (
-                  `Estimated for ${distance * 2 < 250 ? '250 KM (Min Billing)' : `${distance * 2} KM total`} at ₹${perKmRate}/KM using a ${carType.toUpperCase()} (${hasAC ? 'With A/C' : 'Without A/C'}).`
+                  `Estimated for ${distance * 2 < 250 ? '250 KM (Min Billing)' : `${distance * 2} KM total`} at ₹${perKmRate}/KM using a ${carType.toUpperCase()}.`
                 )}
               </p>
-              <Link href={`/book?car_type=${carType}&ride_type=${rideType}&distance=${distance}&has_ac=${hasAC}`} className="btn btn-primary" style={{ width: '100%' }}>
+              <Link href={`/book?car_type=${carType}&ride_type=${rideType}&distance=${distance}`} className="btn btn-primary" style={{ width: '100%' }}>
                 Book This Ride Now
               </Link>
             </div>

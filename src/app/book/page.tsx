@@ -468,6 +468,11 @@ function BookFormContent() {
   const [returnTime, setReturnTime] = useState(initialReturnDT.time);
   const [distanceKm, setDistanceKm] = useState<number>(50);
   const [paymentMode, setPaymentMode] = useState<'cash' | 'upi'>('cash');
+
+  const [pickupPlaceId, setPickupPlaceId] = useState('');
+  const [dropPlaceId, setDropPlaceId] = useState('');
+  const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+  const [routeDuration, setRouteDuration] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -538,6 +543,48 @@ function BookFormContent() {
 
     return () => clearTimeout(delayDebounce);
   }, [dropAddress]);
+
+  // Dynamic Google Distance Matrix calculation
+  useEffect(() => {
+    const calculateDistance = async () => {
+      if (!pickupAddress.trim() || !dropAddress.trim() || pickupAddress.length < 2 || dropAddress.length < 2) {
+        return;
+      }
+
+      setIsCalculatingDistance(true);
+      try {
+        const queryParams = new URLSearchParams();
+        if (pickupPlaceId) queryParams.set('origin_place_id', pickupPlaceId);
+        else queryParams.set('origin', pickupAddress);
+
+        if (dropPlaceId) queryParams.set('destination_place_id', dropPlaceId);
+        else queryParams.set('destination', dropAddress);
+
+        const res = await fetch(`/api/distance?${queryParams.toString()}`);
+        if (!res.ok) {
+          throw new Error('Distance API request failed');
+        }
+        const data = await res.json();
+        if (data.distanceKm !== undefined) {
+          setDistanceKm(data.distanceKm);
+          setRouteDuration(data.durationText || '');
+        }
+      } catch (err) {
+        console.warn('Failed to calculate driving distance, falling back to default:', err);
+        // Fallback: use minimum thresholds or reasonable defaults
+        setDistanceKm(rideType === 'one_way' ? 130 : 125);
+        setRouteDuration('Approx. 2-3 hours');
+      } finally {
+        setIsCalculatingDistance(false);
+      }
+    };
+
+    const delayDebounce = setTimeout(() => {
+      calculateDistance();
+    }, 600); // debounce slightly to avoid API spam while typing manually
+
+    return () => clearTimeout(delayDebounce);
+  }, [pickupAddress, dropAddress, pickupPlaceId, dropPlaceId, rideType]);
 
   const checkUserProfile = async (userId: string) => {
     const { data: userProfile } = await supabase
@@ -822,21 +869,21 @@ function BookFormContent() {
                     sedan: {
                       name: 'SEDAN',
                       passengers: '4 Passengers',
-                      basePrice: 15, // Display default With A/C rates as show in the image
+                      basePrice: rideType === 'one_way' ? 15 : 14,
                       tag: 'Most Booked',
                       img: '/assets/sedan car.png'
                     },
                     suv: {
                       name: 'SUV',
                       passengers: '6 Passengers',
-                      basePrice: 20,
+                      basePrice: rideType === 'one_way' ? 20 : 19,
                       tag: 'Extra Space',
                       img: '/assets/SUV car.png'
                     },
                     innova: {
                       name: 'INNOVA',
                       passengers: '7 Passengers',
-                      basePrice: 21,
+                      basePrice: rideType === 'one_way' ? 21 : 20,
                       tag: 'Executive',
                       img: '/assets/Innova car.png'
                     }
@@ -909,6 +956,7 @@ function BookFormContent() {
                   value={pickupAddress}
                   onChange={(e) => {
                     setPickupAddress(e.target.value);
+                    setPickupPlaceId('');
                     setShowPickupSuggestions(true);
                   }}
                   onFocus={() => setShowPickupSuggestions(true)}
@@ -937,6 +985,7 @@ function BookFormContent() {
                         key={place.place_id || idx}
                         onClick={() => {
                           setPickupAddress(place.description);
+                          setPickupPlaceId(place.place_id);
                           setShowPickupSuggestions(false);
                         }}
                         style={{
@@ -982,6 +1031,7 @@ function BookFormContent() {
                   value={dropAddress}
                   onChange={(e) => {
                     setDropAddress(e.target.value);
+                    setDropPlaceId('');
                     setShowDropSuggestions(true);
                   }}
                   onFocus={() => setShowDropSuggestions(true)}
@@ -1010,6 +1060,7 @@ function BookFormContent() {
                         key={place.place_id || idx}
                         onClick={() => {
                           setDropAddress(place.description);
+                          setDropPlaceId(place.place_id);
                           setShowDropSuggestions(false);
                         }}
                         style={{
@@ -1068,33 +1119,55 @@ function BookFormContent() {
               />
             )}
 
-            {/* Estimated distance & payment mode */}
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Estimated Distance (KM)</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={distanceKm}
-                  onChange={(e) => setDistanceKm(Math.max(1, Number(e.target.value)))}
-                  min="1"
-                  required
-                />
+            {/* Dynamic Calculated Distance Panel */}
+            {pickupAddress && dropAddress && (
+              <div style={{
+                backgroundColor: 'rgba(249, 115, 22, 0.03)',
+                border: '1.5px solid rgba(249, 115, 22, 0.3)',
+                borderRadius: 'var(--radius-md)',
+                padding: '1.25rem 1.5rem',
+                marginBottom: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.6rem'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--secondary)' }}>Calculated Driving Distance:</span>
+                  {isCalculatingDistance ? (
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Calculating...</span>
+                  ) : (
+                    <span style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--primary)' }}>{distanceKm} KM</span>
+                  )}
+                </div>
+                {routeDuration && !isCalculatingDistance && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <span>Estimated Duration:</span>
+                    <span style={{ fontWeight: 600 }}>{routeDuration}</span>
+                  </div>
+                )}
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', borderTop: '1px dashed var(--border-color)', paddingTop: '0.5rem', marginTop: '0.25rem' }}>
+                  {rideType === 'one_way' ? (
+                    <span>Note: One Way has a minimum billing distance of 130 KM. {distanceKm < 130 && <strong style={{ color: 'var(--primary)' }}>Under threshold (130 KM will be billed).</strong>}</span>
+                  ) : (
+                    <span>Note: Round Trip has a minimum billing distance of 250 KM. {distanceKm * 2 < 250 && <strong style={{ color: 'var(--primary)' }}>Under threshold (250 KM will be billed).</strong>}</span>
+                  )}
+                </div>
               </div>
+            )}
 
-              <div className="form-group">
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <DollarSign size={14} style={{ color: 'var(--primary)' }} /> Payment Mode
-                </label>
-                <select
-                  className="form-control"
-                  value={paymentMode}
-                  onChange={(e: any) => setPaymentMode(e.target.value)}
-                >
-                  <option value="cash">Cash</option>
-                  <option value="upi">UPI (GPay / PhonePe)</option>
-                </select>
-              </div>
+            {/* Payment Mode Selector */}
+            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <DollarSign size={14} style={{ color: 'var(--primary)' }} /> Payment Mode
+              </label>
+              <select
+                className="form-control"
+                value={paymentMode}
+                onChange={(e: any) => setPaymentMode(e.target.value)}
+              >
+                <option value="cash">Cash</option>
+                <option value="upi">UPI (GPay / PhonePe / Paytm)</option>
+              </select>
             </div>
 
             <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '1.5rem' }}>

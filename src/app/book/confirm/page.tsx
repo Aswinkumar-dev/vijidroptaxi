@@ -57,14 +57,17 @@ function ConfirmBookingContent() {
         allowance = Number(data.driver_allowance || 0);
       } else {
         if (carType === 'innova') {
-          base = 180; rate = 21;
+          base = 180; 
+          rate = rideType === 'one_way' ? 21 : 20;
           if (rideType === 'round_trip') allowance = 350;
         } else if (carType === 'suv') {
-          base = 150; rate = 20;
+          base = 150; 
+          rate = rideType === 'one_way' ? 20 : 19;
           if (rideType === 'round_trip') allowance = 300;
         } else {
           // sedan
-          base = 100; rate = 15;
+          base = 100; 
+          rate = rideType === 'one_way' ? 15 : 14;
           if (rideType === 'round_trip') allowance = 250;
         }
       }

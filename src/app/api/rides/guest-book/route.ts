@@ -52,15 +52,15 @@ export async function POST(req: NextRequest) {
     } else {
       if (car_type === 'innova') {
         base_fare = 180;
-        per_km_rate = 21;
+        per_km_rate = ride_type === 'one_way' ? 21 : 20;
         if (ride_type === 'round_trip') driver_allowance = 350;
       } else if (car_type === 'suv') {
         base_fare = 150;
-        per_km_rate = 20;
+        per_km_rate = ride_type === 'one_way' ? 20 : 19;
         if (ride_type === 'round_trip') driver_allowance = 300;
       } else {
         base_fare = 100;
-        per_km_rate = 15;
+        per_km_rate = ride_type === 'one_way' ? 15 : 14;
         if (ride_type === 'round_trip') driver_allowance = 250;
       }
     }
