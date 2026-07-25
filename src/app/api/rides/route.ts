@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const adminSupabase = createAdminClient();
     const { data: profile, error: profileError } = await adminSupabase
       .from('profiles')
-      .select('role')
+      .select('role, full_name, phone')
       .eq('id', user.id)
       .single();
 
@@ -119,6 +119,28 @@ export async function POST(req: NextRequest) {
       status: 'pending',
       changed_by: user.id,
     });
+
+    // Send Telegram alert in the background
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    if (botToken && chatId) {
+      const msg = `🎉 *New Booking Confirmed!*\n` +
+                  `*Name:* ${profile?.full_name || 'Customer'}\n` +
+                  `*Phone:* ${profile?.phone || 'N/A'}\n` +
+                  `*Ride Type:* ${ride_type === 'one_way' ? 'One Way' : 'Round Trip'}\n` +
+                  `*Pickup:* ${pickup_address}\n` +
+                  `*Drop:* ${drop_address}\n` +
+                  `*Date/Time:* ${new Date(scheduled_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\n` +
+                  `*Car Type:* ${car_type.toUpperCase()}\n` +
+                  `*Distance:* ${calculated_distance} KM\n` +
+                  `*Total Fare:* ₹${total_fare}`;
+                  
+      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
+      }).catch(err => console.error('Telegram notification error:', err));
+    }
 
     return NextResponse.json(ride, { status: 201 });
   } catch (error: any) {

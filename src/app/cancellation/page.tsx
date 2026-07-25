@@ -5,15 +5,11 @@ import Link from 'next/link';
 import { Ban, Calendar, CheckCircle, AlertTriangle, RefreshCw, Clock, UserCheck, Phone, Mail, Headphones } from 'lucide-react';
 
 export default function CancellationPolicy() {
-  const [mounted, setMounted] = React.useState(false);
+  const [currentMonthYear, setCurrentMonthYear] = React.useState('July 2026');
 
   React.useEffect(() => {
-    setMounted(true);
+    setCurrentMonthYear(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
   }, []);
-
-  const currentMonthYear = mounted
-    ? new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
-    : 'July 2026';
 
   return (
     <div style={{

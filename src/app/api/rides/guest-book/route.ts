@@ -99,6 +99,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: rideError?.message || 'Failed to create booking.' }, { status: 500 });
     }
 
+    // Send Telegram alert in the background
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    if (botToken && chatId) {
+      const msg = `🎉 *New Booking Confirmed!*\n` +
+                  `*Name:* ${ride.customer_name}\n` +
+                  `*Phone:* ${ride.customer_phone}\n` +
+                  `*Ride Type:* ${ride_type === 'one_way' ? 'One Way' : 'Round Trip'}\n` +
+                  `*Pickup:* ${pickup_address}\n` +
+                  `*Drop:* ${drop_address}\n` +
+                  `*Date/Time:* ${new Date(scheduled_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\n` +
+                  `*Car Type:* ${car_type.toUpperCase()}\n` +
+                  `*Distance:* ${calculated_distance} KM\n` +
+                  `*Total Fare:* ₹${total_fare}`;
+                  
+      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' })
+      }).catch(err => console.error('Telegram notification error:', err));
+    }
+
     return NextResponse.json({ id: ride.id, message: 'Booking created successfully' }, { status: 201 });
   } catch (error: any) {
     console.error('Server error during guest booking:', error);

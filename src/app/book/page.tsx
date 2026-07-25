@@ -700,6 +700,24 @@ function BookFormContent() {
       queryParams.phone = phone.trim();
     }
 
+    // Format message for Telegram alert
+    const bookingStartedMessage = `🚖 *New Booking Started!*\n` +
+                                  `*Name:* ${!user ? fullName.trim() : 'Logged-in User'}\n` +
+                                  `*Phone:* ${!user ? phone.trim() : 'N/A'}\n` +
+                                  `*Ride Type:* ${rideType === 'one_way' ? 'One Way' : 'Round Trip'}\n` +
+                                  `*Pickup:* ${pickupAddress}\n` +
+                                  `*Drop:* ${dropAddress}\n` +
+                                  `*Date/Time:* ${formatDisplayDateTime(scheduledDate, scheduledTime)}\n` +
+                                  `*Distance:* ${distanceKm} KM\n` +
+                                  `*Car Type:* ${carType.toUpperCase()}`;
+
+    // Send lead notification asynchronously
+    fetch('/api/telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: bookingStartedMessage })
+    }).catch(err => console.warn('Failed to send Telegram notification:', err));
+
     const query = new URLSearchParams(queryParams).toString();
     router.push(`/book/confirm?${query}`);
   };

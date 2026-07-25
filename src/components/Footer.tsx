@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
 
 export default function Footer() {
+  const [currentYear, setCurrentYear] = useState(2026);
+  useEffect(() => {
+    setCurrentYear(new Date().getFullYear());
+  }, []);
+
   return (
     <footer style={{
       backgroundColor: 'var(--secondary)',
@@ -94,7 +99,7 @@ export default function Footer() {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <span>© {new Date().getFullYear()} Viji Drop Taxi. All rights reserved.</span>
+          <span>© {currentYear} Viji Drop Taxi. All rights reserved.</span>
           <span>Designed by Webgrat.</span>
         </div>
       </div>
