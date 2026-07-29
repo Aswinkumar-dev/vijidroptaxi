@@ -79,23 +79,14 @@ function SuccessContent() {
         {/* OTP Warning Banner */}
         <div style={{
           backgroundColor: 'rgba(249, 115, 22, 0.08)',
-          border: '2px solid rgba(249, 115, 22, 0.35)',
+          border: '1px solid rgba(249, 115, 22, 0.25)',
           borderRadius: 'var(--radius-md)',
           padding: '1.25rem 1.5rem',
-          marginBottom: '1rem',
+          marginBottom: '1.25rem',
           textAlign: 'center',
         }}>
-          <p style={{
-            fontSize: '1.2rem',
-            fontWeight: 800,
-            color: 'var(--primary)',
-            marginBottom: '0.4rem',
-            letterSpacing: '-0.01em',
-          }}>
-            🚨 Do not close this page
-          </p>
-          <p style={{ fontSize: '0.875rem', color: 'var(--secondary)', lineHeight: 1.65 }}>
-            You will receive an OTP once your ride is confirmed. Please share it with your driver when they arrive.
+          <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--secondary)', lineHeight: 1.65, margin: 0 }}>
+            You will receive an OTP via SMS. Please share it with your driver before starting your ride.
           </p>
         </div>
 

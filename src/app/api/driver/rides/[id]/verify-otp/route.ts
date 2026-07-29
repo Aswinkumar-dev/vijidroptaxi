@@ -69,6 +69,29 @@ export async function POST(
       return NextResponse.json({ error: 'Ride is not in driver_arrived state' }, { status: 400 });
     }
 
+    // Check if OTP is expired (24 hours limit since confirmation)
+    let otpCreatedAt = new Date(ride.created_at); // fallback
+    const { data: statusHistory } = await adminSupabase
+      .from('ride_status_history')
+      .select('created_at')
+      .eq('ride_id', rideId)
+      .eq('status', 'confirmed')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (statusHistory && statusHistory.length > 0) {
+      otpCreatedAt = new Date(statusHistory[0].created_at);
+    }
+
+    const now = new Date();
+    const ageInHours = (now.getTime() - otpCreatedAt.getTime()) / (1000 * 60 * 60);
+    if (ageInHours >= 24) {
+      return NextResponse.json({
+        error: 'OTP has expired (24-hour validity exceeded). Please contact admin to reset.',
+        locked: true,
+      }, { status: 410 }); // 410 Gone
+    }
+
     // Check attempt threshold (limit = 5)
     if (ride.otp_attempts >= 5) {
       return NextResponse.json({
