@@ -73,23 +73,25 @@ export default function AdminCars() {
     setErrorMsg('');
 
     try {
-      const { error } = await supabase
-        .from('cars')
-        .insert({
-          registration_number: registrationNumber.trim().toUpperCase(),
-          brand: brand.trim(),
-          model: model.trim(),
-          color: color.trim(),
+      const response = await fetch('/api/admin/cars', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          registration_number: registrationNumber,
+          brand,
+          model,
+          color,
           car_type: carType,
           seating_capacity: seatingCapacity,
-          is_active: true
-        });
+        }),
+      });
 
-      if (error) {
-        if (error.code === '23505') {
-          throw new Error('A vehicle with this registration plate number is already registered.');
-        }
-        throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add vehicle.');
       }
 
       setShowAddModal(false);
@@ -110,12 +112,23 @@ export default function AdminCars() {
 
   const toggleCarActive = async (carId: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from('cars')
-        .update({ is_active: !currentStatus })
-        .eq('id', carId);
+      const response = await fetch('/api/admin/cars', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: carId,
+          is_active: !currentStatus,
+        }),
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update vehicle status.');
+      }
+
       fetchCars();
     } catch (err: any) {
       alert(err.message || 'Error toggling car status.');
