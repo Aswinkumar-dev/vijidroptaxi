@@ -1114,7 +1114,7 @@ p {
 }
 
 .call-float-btn:hover {
-  transform: scale(1.12) rotate(-8deg);
+  transform: scale(1.12);
   box-shadow: 0 6px 28px rgba(249, 115, 22, 0.75);
 }
 
@@ -1141,7 +1141,7 @@ p {
 }
 
 .whatsapp-icon-btn:hover {
-  transform: scale(1.12) rotate(8deg);
+  transform: scale(1.12);
   box-shadow: 0 6px 28px rgba(37, 211, 102, 0.75);
 }
 

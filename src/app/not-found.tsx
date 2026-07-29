@@ -29,6 +29,13 @@ export default function NotFound() {
         pointerEvents: 'none'
       }} />
 
+      {/* Hide chrome (navbar, footer, whatsapp) on 404 page */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .navbar-header, footer, .floating-buttons-container {
+          display: none !important;
+        }
+      ` }} />
+
       <div style={{
         maxWidth: '560px',
         width: '100%',
@@ -99,7 +106,7 @@ export default function NotFound() {
           maxWidth: '420px',
           margin: '0 auto 2.5rem'
         }}>
-          It looks like you've driven off the map. This destination doesn't exist or has been relocated. Let's get you back on the right road!
+          Oops! Looks like this ride ended at the wrong destination. Let's get you back on the right route.
         </p>
 
         {/* Idling Car & Road Graphic */}
@@ -139,18 +146,7 @@ export default function NotFound() {
             boxShadow: '0 4px 10px rgba(15, 23, 42, 0.2)'
           }} />
           
-          {/* Dash Road Markers */}
-          <div style={{
-            position: 'absolute',
-            bottom: '-4px',
-            left: '20%',
-            right: '20%',
-            height: '2px',
-            backgroundImage: 'linear-gradient(to right, var(--secondary, #0f172a) 50%, transparent 50%)',
-            backgroundSize: '16px 2px',
-            zIndex: 1,
-            opacity: 0.6
-          }} />
+
         </div>
 
         {/* Actions Button Grid */}
