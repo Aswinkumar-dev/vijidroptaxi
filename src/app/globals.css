@@ -1616,4 +1616,42 @@ p {
   }
 }
 
+/* 404 Custom Animations */
+.animate-ping-custom {
+  animation: ping-custom 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-bounce-pin {
+  animation: bounce-pin-custom 2s ease-in-out infinite;
+}
+
+.animate-engine-idle {
+  animation: engine-idle-custom 0.15s ease-in-out infinite alternate;
+}
+
+@keyframes bounce-pin-custom {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes ping-custom {
+  75%, 100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes engine-idle-custom {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-1.5px) rotate(0.15deg);
+  }
+}
+
 
