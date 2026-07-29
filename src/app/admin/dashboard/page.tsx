@@ -104,7 +104,7 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>Admin Dispatch Console</h1>
-            <p>Monitor your 2-3 vehicle fleet and coordinate passenger dispatches</p>
+            <p>Monitor your 2-3 vehicles and coordinate passenger dispatches</p>
           </div>
           <button onClick={fetchStats} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <RefreshCw size={16} /> Refresh Console
@@ -142,7 +142,7 @@ export default function AdminDashboard() {
 
           <div className="card" style={{ padding: '1.5rem', borderLeft: '4px solid var(--success)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Active Fleet</span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Active Cars</span>
               <Car size={20} style={{ color: 'var(--success)' }} />
             </div>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--secondary)', marginTop: '0.5rem' }}>{stats.totalCars} Cars</div>
@@ -245,10 +245,10 @@ export default function AdminDashboard() {
 
             <div className="card" style={{ padding: '1.5rem' }}>
               <h3 style={{ fontSize: '1.1rem', color: 'var(--secondary)', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                Fleet Scale Summary
+                Car Scale Summary
               </h3>
               <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-                Your taxi company operates a small high-end fleet, optimized to scale up to 10 vehicles. All rides are manually dispatched by you.
+                Your taxi company operates a small high-end selection of cars, optimized to scale up to 10 vehicles. All rides are manually dispatched by you.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div style={{ backgroundColor: '#FFF7ED', padding: '0.75rem', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)', marginTop: '0.25rem' }}>{stats.avgRating} ★</div>
                 </div>
                 <div style={{ backgroundColor: '#F8FAFC', padding: '0.75rem', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Fleet Status</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Car Status</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--secondary)', marginTop: '0.25rem' }}>Active</div>
                 </div>
               </div>

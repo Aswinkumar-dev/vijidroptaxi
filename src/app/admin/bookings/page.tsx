@@ -330,7 +330,7 @@ export default function AdminBookings() {
                 <label className="form-label">Select Active vehicle (Filtered by {selectedRide.car_type.toUpperCase()})</label>
                 {getFilteredCars().length === 0 ? (
                   <div style={{ color: 'var(--error)', fontSize: '0.85rem', fontWeight: 600, padding: '0.5rem', border: '1px solid rgba(239,68,68,0.2)', backgroundColor: '#FEF2F2', borderRadius: 'var(--radius-sm)' }}>
-                    ⚠️ No active {selectedRide.car_type.toUpperCase()}s available in the fleet! Please add or activate a vehicle.
+                    ⚠️ No active {selectedRide.car_type.toUpperCase()}s available! Please add or activate a vehicle.
                   </div>
                 ) : (
                   <select

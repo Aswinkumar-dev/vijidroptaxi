@@ -45,14 +45,14 @@ export default function AdminCars() {
         return;
       }
 
-      // Fetch cars
-      const { data: carsData, error: carsErr } = await supabase
-        .from('cars')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch cars via API
+      const response = await fetch('/api/admin/cars');
+      const data = await response.json();
 
-      if (carsErr) throw carsErr;
-      setCars(carsData || []);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch vehicles.');
+      }
+      setCars(data.cars || []);
 
     } catch (err: any) {
       setErrorMsg(err.message || 'Error occurred.');
@@ -102,7 +102,7 @@ export default function AdminCars() {
       setCarType('sedan');
       setSeatingCapacity(4);
       fetchCars();
-      alert('Vehicle added to fleet successfully!');
+      alert('Vehicle added successfully!');
     } catch (err: any) {
       alert(err.message || 'Error occurred adding car.');
     } finally {
@@ -141,8 +141,8 @@ export default function AdminCars() {
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>Fleet Management</h1>
-            <p>Add, edit, or toggle active vehicles in your taxi fleet (scales from 3 to 10 cars easily)</p>
+            <h1 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>Car Management</h1>
+            <p>Add, edit, or toggle active vehicles in your taxi cars list</p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button onClick={fetchCars} className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--border-color)' }}>
@@ -162,11 +162,11 @@ export default function AdminCars() {
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '5rem' }}>
-            <div style={{ color: 'var(--text-muted)' }}>Loading fleet list...</div>
+            <div style={{ color: 'var(--text-muted)' }}>Loading cars list...</div>
           </div>
         ) : cars.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-            <p style={{ marginBottom: '1.5rem' }}>No cars registered in the fleet database yet.</p>
+            <p style={{ marginBottom: '1.5rem' }}>No cars registered in the database yet.</p>
             <button onClick={() => setShowAddModal(true)} className="btn btn-primary">Add First Car</button>
           </div>
         ) : (
@@ -215,7 +215,7 @@ export default function AdminCars() {
           <div className="modal-content" style={{ maxWidth: '500px' }}>
             
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ color: 'var(--secondary)' }}>Add Vehicle to Fleet</h3>
+              <h3 style={{ color: 'var(--secondary)' }}>Add Vehicle</h3>
               <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Register a new Sedan, SUV, or Innova</p>
             </div>
 

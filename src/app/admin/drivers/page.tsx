@@ -158,7 +158,7 @@ export default function AdminDrivers() {
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>Driver Fleet Registry</h1>
+            <h1 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>Driver Registry</h1>
             <p>Manage driver documentation and link vehicle assignments</p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>

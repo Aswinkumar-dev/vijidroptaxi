@@ -155,7 +155,7 @@ export default function DriverDashboard() {
               ⚠️ Profile Setup Pending
             </h4>
             <p style={{ margin: 0, fontSize: '0.9rem' }}>
-              Your driver registration is approved! However, the dispatcher has not yet linked a vehicle or license details to your fleet account. Please contact the administrator to complete your profile configuration.
+              Your driver registration is approved! However, the dispatcher has not yet linked a vehicle or license details to your driver account. Please contact the administrator to complete your profile configuration.
             </p>
           </div>
         )}

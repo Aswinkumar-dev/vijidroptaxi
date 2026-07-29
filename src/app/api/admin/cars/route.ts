@@ -16,6 +16,31 @@ async function verifyAdmin() {
   return user.id;
 }
 
+export async function GET(req: NextRequest) {
+  try {
+    const adminId = await verifyAdmin();
+    if (!adminId) {
+      return NextResponse.json({ error: 'Unauthorized: Admins only' }, { status: 403 });
+    }
+
+    const adminSupabase = createAdminClient();
+    const { data: cars, error } = await adminSupabase
+      .from('cars')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching cars:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ cars });
+  } catch (error: any) {
+    console.error('Server error fetching cars:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const adminId = await verifyAdmin();

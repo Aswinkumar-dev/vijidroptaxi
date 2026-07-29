@@ -154,7 +154,7 @@ export default function DriverProfile() {
                 {/* Assigned Vehicle */}
                 <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
                   <h4 style={{ fontSize: '0.95rem', color: 'var(--secondary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Car size={16} style={{ color: 'var(--primary)' }} /> Linked Active Fleet Vehicle
+                    <Car size={16} style={{ color: 'var(--primary)' }} /> Linked Active Vehicle
                   </h4>
                   {driver.car ? (
                     <div style={{ backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>

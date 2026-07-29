@@ -86,7 +86,7 @@ export default function AdminLogin() {
             />
           </div>
           <h2 style={{ color: 'var(--secondary)' }}>Admin Portal Sign In</h2>
-          <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>Access the dispatcher fleet panel</p>
+          <p style={{ fontSize: '0.9rem', marginTop: '0.25rem' }}>Access the dispatcher panel</p>
         </div>
 
         {errorMsg && (
