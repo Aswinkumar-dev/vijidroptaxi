@@ -259,9 +259,43 @@ export default function DriverRideControl({ params }: PageProps) {
               }}>
                 <ShieldCheck size={32} />
               </div>
-              <h3 style={{ color: 'var(--secondary)' }}>Ride Completed Successfully</h3>
-              <p style={{ marginTop: '0.5rem' }}>Payment of ₹{ride.total_fare} has been recorded as COLLECTED ({ride.payment_mode || 'cash'}).</p>
-              <Link href="/driver/dashboard" className="btn btn-outline btn-sm" style={{ marginTop: '1.5rem' }}>
+              <h3 style={{ color: 'var(--secondary)', marginBottom: '0.5rem' }}>Ride Completed Successfully</h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                Payment of ₹{ride.total_fare} has been recorded as COLLECTED ({ride.payment_mode || 'cash'}).
+              </p>
+
+              {/* Review Collection Section */}
+              <div style={{ backgroundColor: '#FAF5FF', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: 'var(--radius-md)', padding: '1.25rem', marginTop: '1.5rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+                <h4 style={{ color: 'var(--secondary)', fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  ⭐ Customer Rating & Feedback
+                </h4>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                  Ask the passenger to rate their ride experience and submit feedback.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <a
+                    href={`https://wa.me/${(ride.customer_phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Thanks for riding with Viji Drop Taxi! Please rate your ride experience and driver here: ${window.location.origin}/rate/${ride.id}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-primary"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.6rem', fontSize: '0.88rem' }}
+                  >
+                    Share Review Link via WhatsApp
+                  </a>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/rate/${ride.id}`);
+                      alert('Review link copied to clipboard!');
+                    }}
+                    className="btn btn-outline"
+                    style={{ padding: '0.6rem', fontSize: '0.88rem' }}
+                  >
+                    Copy Review Link
+                  </button>
+                </div>
+              </div>
+
+              <Link href="/driver/dashboard" className="btn btn-outline btn-sm" style={{ width: '100%', padding: '0.6rem', fontSize: '0.88rem' }}>
                 Go to Active Board
               </Link>
             </div>
