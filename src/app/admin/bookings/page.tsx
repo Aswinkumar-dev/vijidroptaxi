@@ -225,10 +225,10 @@ export default function AdminBookings() {
                   <tr key={ride.id}>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--secondary)' }}>
-                        {ride.customer?.full_name || 'Deleted Account'}
+                        {ride.customer_name || ride.customer?.full_name || 'Guest User'}
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        📞 {ride.customer?.phone}
+                        📞 {ride.customer_phone || ride.customer?.phone || 'N/A'}
                       </div>
                     </td>
                     <td>

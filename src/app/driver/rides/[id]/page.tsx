@@ -327,12 +327,12 @@ export default function DriverRideControl({ params }: PageProps) {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ fontWeight: 700, color: 'var(--secondary)', fontSize: '1.1rem' }}>
-              {ride.customer?.full_name}
+              {ride.customer_name || ride.customer?.full_name || 'Guest Passenger'}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem' }}>
               <Phone size={15} style={{ color: 'var(--text-muted)' }} />
-              <a href={`tel:${ride.customer?.phone}`} style={{ color: 'var(--primary)', fontWeight: 700 }}>
-                {ride.customer?.phone}
+              <a href={`tel:${ride.customer_phone || ride.customer?.phone}`} style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                {ride.customer_phone || ride.customer?.phone || 'N/A'}
               </a>
             </div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', border: '1px solid var(--border-color)', padding: '0.5rem', borderRadius: 'var(--radius-sm)', backgroundColor: '#FAF5FF', marginTop: '0.25rem' }}>

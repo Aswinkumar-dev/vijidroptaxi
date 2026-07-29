@@ -66,65 +66,12 @@ export async function POST(req: NextRequest) {
       ? `Return Trip: ${new Date(return_scheduled_at).toLocaleDateString('en-IN', { dateStyle: 'medium' })} ${new Date(return_scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`
       : null;
 
-    // Standardized guest credentials
-    const guestEmail = `${digitsOnly}@vijidroptaxi.com`;
-    const guestPassword = `viji_${digitsOnly}`;
-
-    let customerId: string;
-
-    // Check if profile exists with this phone number
-    const { data: existingProfile, error: profileError } = await adminClient
-      .from('profiles')
-      .select('id, role')
-      .eq('phone', formattedPhone)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error('Error checking profile:', profileError);
-      return NextResponse.json({ error: 'Database check failed' }, { status: 500 });
-    }
-
-    if (existingProfile) {
-      if (existingProfile.role !== 'customer') {
-        return NextResponse.json({ error: 'This phone number belongs to a driver or admin account.' }, { status: 400 });
-      }
-      customerId = existingProfile.id;
-    } else {
-      // Create new auth user
-      const { data: newAuthUser, error: createAuthError } = await adminClient.auth.admin.createUser({
-        email: guestEmail,
-        password: guestPassword,
-        email_confirm: true,
-      });
-
-      if (createAuthError || !newAuthUser.user) {
-        console.error('Error creating auth user:', createAuthError);
-        return NextResponse.json({ error: createAuthError?.message || 'Failed to create account.' }, { status: 500 });
-      }
-
-      customerId = newAuthUser.user.id;
-
-      // Insert profile record
-      const { error: insertProfileError } = await adminClient
-        .from('profiles')
-        .insert({
-          id: customerId,
-          full_name: full_name.trim(),
-          phone: formattedPhone,
-          role: 'customer',
-        });
-
-      if (insertProfileError) {
-        console.error('Error inserting profile:', insertProfileError);
-        return NextResponse.json({ error: 'Failed to create customer profile.' }, { status: 500 });
-      }
-    }
-
-    // Insert ride directly using customer_id to match DB schema
+    // Insert ride directly — storing passenger details directly in rides table (since columns have been added!)
     const { data: ride, error: rideError } = await adminClient
       .from('rides')
       .insert({
-        customer_id: customerId,
+        customer_name: full_name.trim(),
+        customer_phone: formattedPhone,
         ride_type,
         pickup_address,
         drop_address,
@@ -135,6 +82,7 @@ export async function POST(req: NextRequest) {
         payment_mode,
         status: 'pending',
         notes: notesStr,
+        base_fare: 0,
       })
       .select()
       .single();

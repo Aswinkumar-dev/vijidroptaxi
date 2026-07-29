@@ -148,7 +148,7 @@ export default function DriverHistory() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.9rem' }}>
-                  <div><strong>Customer:</strong> {ride.customer?.full_name}</div>
+                  <div><strong>Customer:</strong> {ride.customer_name || ride.customer?.full_name || 'Guest Passenger'}</div>
                   <div><strong>Pickup:</strong> {ride.pickup_address}</div>
                   <div><strong>Drop:</strong> {ride.drop_address}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Trip Distance: {ride.distance_km} KM | Car Type: {ride.car_type.toUpperCase()}</div>

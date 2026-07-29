@@ -195,8 +195,12 @@ export default function AdminDashboard() {
                     {recentRides.map(ride => (
                       <tr key={ride.id}>
                         <td>
-                          <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>{ride.customer?.full_name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ride.customer?.phone}</div>
+                          <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem' }}>
+                            {ride.customer_name || ride.customer?.full_name || 'Guest User'}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {ride.customer_phone || ride.customer?.phone || 'N/A'}
+                          </div>
                         </td>
                         <td style={{ fontSize: '0.8rem' }}>
                           {new Date(ride.scheduled_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} <br />
