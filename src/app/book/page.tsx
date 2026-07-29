@@ -98,6 +98,7 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
   const [selectedHour, setSelectedHour] = useState('12');
   const [selectedMinute, setSelectedMinute] = useState('00');
   const [selectedPeriod, setSelectedPeriod] = useState('AM');
+  const [clockMode, setClockMode] = useState<'hour' | 'minute'>('hour');
 
   useEffect(() => {
     if (valueDate) {
@@ -113,6 +114,9 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
       setSelectedPeriod(hourNum >= 12 ? 'PM' : 'AM');
       setSelectedHour(String(hourNum % 12 || 12).padStart(2, '0'));
       setSelectedMinute(m);
+    }
+    if (isOpen) {
+      setClockMode('hour');
     }
   }, [valueDate, valueTime, isOpen]);
 
@@ -191,17 +195,55 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
     daysArray.push(d);
   }
 
-  // Hours array (01 - 12)
-  const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'));
-  // Minutes array (00, 05, 10, 15, ..., 55)
-  const minutes = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
-  const periods = ['AM', 'PM'];
-
   const getIsActiveDay = (day: number | null) => {
     if (!day) return false;
     const formattedMonth = String(currentMonth + 1).padStart(2, '0');
     const formattedDay = String(day).padStart(2, '0');
     return valueDate === `${currentYear}-${formattedMonth}-${formattedDay}`;
+  };
+
+  // Hand rotation degrees: 12 o'clock (pointing straight up) should be at 0deg rotation, 
+  // but since straight down is default 0deg rotation, we translate with +180deg.
+  const getHandRotation = () => {
+    if (clockMode === 'hour') {
+      const h = parseInt(selectedHour, 10);
+      return (h * 30 + 180) % 360;
+    } else {
+      const m = parseInt(selectedMinute, 10);
+      return (m * 6 + 180) % 360;
+    }
+  };
+
+  const handleClockClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - 70; // 70 is cx
+    const y = e.clientY - rect.top - 70;  // 70 is cy
+    
+    const angleRad = Math.atan2(y, x);
+    let angleDeg = angleRad * 180 / Math.PI;
+    
+    // adjust so 12 o'clock (top) is 0 degrees
+    let angleFrom12 = angleDeg + 90;
+    if (angleFrom12 < 0) {
+      angleFrom12 += 360;
+    }
+    
+    if (clockMode === 'hour') {
+      let hour = Math.round(angleFrom12 / 30);
+      if (hour === 0) hour = 12;
+      if (hour > 12) hour = hour - 12;
+      const hStr = String(hour).padStart(2, '0');
+      handleTimeSelect('hour', hStr);
+      // Auto-switch to minutes mode for seamless flow
+      setClockMode('minute');
+    } else {
+      let minuteVal = Math.round(angleFrom12 / 6);
+      // round to nearest 5 minutes
+      minuteVal = Math.round(minuteVal / 5) * 5;
+      if (minuteVal >= 60) minuteVal = 0;
+      const mStr = String(minuteVal).padStart(2, '0');
+      handleTimeSelect('minute', mStr);
+    }
   };
 
   return (
@@ -250,7 +292,7 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
           flexDirection: 'column',
           gap: '1rem'
         }}>
-          {/* Main content grid: Calendar on left, Time on right */}
+          {/* Main content grid: Calendar on left, Round Clock on right */}
           <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '1rem' }}>
             
             {/* Calendar section */}
@@ -298,77 +340,171 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
               </div>
             </div>
 
-            {/* Time section */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.25rem', borderLeft: '1px solid var(--border-color)', paddingLeft: '0.5rem' }}>
+            {/* Round Clock Time Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', borderLeft: '1px solid var(--border-color)', paddingLeft: '0.5rem' }}>
               
-              {/* Hours Column */}
-              <div className="time-scroll-col" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', maxHeight: '180px', gap: '2px', scrollbarWidth: 'none' }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center', marginBottom: '4px' }}>HH</div>
-                {hours.map(h => (
-                  <div
-                    key={h}
-                    onClick={() => handleTimeSelect('hour', h)}
-                    style={{
-                      padding: '4px 0',
-                      textAlign: 'center',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundColor: selectedHour === h ? 'var(--secondary)' : 'transparent',
-                      color: selectedHour === h ? '#FFFFFF' : 'var(--text-muted)',
-                      fontWeight: selectedHour === h ? 700 : 500
-                    }}
-                  >
-                    {h}
-                  </div>
-                ))}
+              {/* Header preview showing current selection */}
+              <div style={{ display: 'flex', gap: '3px', fontSize: '1.1rem', fontWeight: 800, marginBottom: '0.4rem', userSelect: 'none' }}>
+                <span 
+                  onClick={() => setClockMode('hour')} 
+                  style={{ 
+                    color: clockMode === 'hour' ? 'var(--primary)' : 'var(--secondary)', 
+                    cursor: 'pointer', 
+                    borderBottom: clockMode === 'hour' ? '2px solid var(--primary)' : 'none',
+                    padding: '0 2px'
+                  }}
+                >
+                  {selectedHour}
+                </span>
+                <span>:</span>
+                <span 
+                  onClick={() => setClockMode('minute')} 
+                  style={{ 
+                    color: clockMode === 'minute' ? 'var(--primary)' : 'var(--secondary)', 
+                    cursor: 'pointer', 
+                    borderBottom: clockMode === 'minute' ? '2px solid var(--primary)' : 'none',
+                    padding: '0 2px'
+                  }}
+                >
+                  {selectedMinute}
+                </span>
+                <span style={{ fontSize: '0.75rem', alignSelf: 'flex-end', marginLeft: '2px', color: 'var(--text-muted)' }}>
+                  {selectedPeriod}
+                </span>
               </div>
 
-              {/* Minutes Column */}
-              <div className="time-scroll-col" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', maxHeight: '180px', gap: '2px', scrollbarWidth: 'none' }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center', marginBottom: '4px' }}>MM</div>
-                {minutes.map(m => (
-                  <div
-                    key={m}
-                    onClick={() => handleTimeSelect('minute', m)}
-                    style={{
-                      padding: '4px 0',
-                      textAlign: 'center',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundColor: selectedMinute === m ? 'var(--secondary)' : 'transparent',
-                      color: selectedMinute === m ? '#FFFFFF' : 'var(--text-muted)',
-                      fontWeight: selectedMinute === m ? 700 : 500
-                    }}
-                  >
-                    {m}
-                  </div>
-                ))}
+              {/* Round Clock Face */}
+              <div 
+                onClick={handleClockClick}
+                style={{
+                  position: 'relative',
+                  width: '140px',
+                  height: '140px',
+                  borderRadius: '50%',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  margin: '0.1rem 0 0.5rem 0'
+                }}
+              >
+                {/* Center dot */}
+                <div style={{
+                  position: 'absolute',
+                  left: '67px',
+                  top: '67px',
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--primary)',
+                  zIndex: 10
+                }} />
+
+                {/* Hand line */}
+                <div style={{
+                  position: 'absolute',
+                  left: '69px',
+                  top: '70px',
+                  width: '2px',
+                  height: '52px',
+                  backgroundColor: 'rgba(249, 115, 22, 0.4)',
+                  transformOrigin: 'top center',
+                  transform: `rotate(${getHandRotation()}deg)`,
+                  zIndex: 8
+                }} />
+
+                {/* Numbers */}
+                {clockMode === 'hour' ? (
+                  [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(h => {
+                    const theta = (h * 30 - 90) * Math.PI / 180;
+                    const x = 70 + 52 * Math.cos(theta);
+                    const y = 70 + 52 * Math.sin(theta);
+                    const isActive = parseInt(selectedHour, 10) === h;
+                    return (
+                      <div
+                        key={h}
+                        style={{
+                          position: 'absolute',
+                          left: `${x}px`,
+                          top: `${y}px`,
+                          transform: 'translate(-50%, -50%)',
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.7rem',
+                          fontWeight: isActive ? 800 : 500,
+                          backgroundColor: isActive ? 'var(--primary)' : 'transparent',
+                          color: isActive ? 'white' : 'var(--secondary)',
+                          zIndex: 9
+                        }}
+                      >
+                        {h}
+                      </div>
+                    );
+                  })
+                ) : (
+                  [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => {
+                    const theta = (m * 6 - 90) * Math.PI / 180;
+                    const x = 70 + 52 * Math.cos(theta);
+                    const y = 70 + 52 * Math.sin(theta);
+                    const isActive = parseInt(selectedMinute, 10) === m;
+                    const displayVal = String(m).padStart(2, '0');
+                    return (
+                      <div
+                        key={m}
+                        style={{
+                          position: 'absolute',
+                          left: `${x}px`,
+                          top: `${y}px`,
+                          transform: 'translate(-50%, -50%)',
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.65rem',
+                          fontWeight: isActive ? 800 : 500,
+                          backgroundColor: isActive ? 'var(--primary)' : 'transparent',
+                          color: isActive ? 'white' : 'var(--secondary)',
+                          zIndex: 9
+                        }}
+                      >
+                        {displayVal}
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
-              {/* Period Column */}
-              <div className="time-scroll-col" style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', maxHeight: '180px', gap: '4px', scrollbarWidth: 'none', justifyContent: 'center' }}>
-                <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textAlign: 'center', marginBottom: '4px' }}>AM/PM</div>
-                {periods.map(p => (
-                  <div
-                    key={p}
-                    onClick={() => handleTimeSelect('period', p)}
-                    style={{
-                      padding: '8px 0',
-                      textAlign: 'center',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                      borderRadius: 'var(--radius-sm)',
-                      backgroundColor: selectedPeriod === p ? 'var(--primary)' : 'transparent',
-                      color: selectedPeriod === p ? '#FFFFFF' : 'var(--text-muted)',
-                      fontWeight: selectedPeriod === p ? 700 : 500,
-                      border: '1px solid var(--border-color)'
-                    }}
-                  >
-                    {p}
-                  </div>
-                ))}
+              {/* AM/PM switcher */}
+              <div style={{ display: 'flex', gap: '6px', width: '100%', padding: '0 0.1rem' }}>
+                {['AM', 'PM'].map(p => {
+                  const isActive = selectedPeriod === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => handleTimeSelect('period', p)}
+                      style={{
+                        flex: 1,
+                        padding: '3px 0',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 'var(--radius-sm)',
+                        backgroundColor: isActive ? 'var(--secondary)' : 'white',
+                        color: isActive ? 'white' : 'var(--text-muted)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
               </div>
 
             </div>
@@ -817,63 +953,7 @@ function BookFormContent() {
             </div>
           )}
 
-          {!user && (
-            <div ref={contactDetailsRef} style={{
-              backgroundColor: 'rgba(249, 115, 22, 0.02)',
-              border: '1px solid var(--border-color)',
-              borderRadius: 'var(--radius-md)',
-              padding: '1.5rem',
-              marginBottom: '1.5rem'
-            }}>
-              <h3 style={{ fontSize: '1rem', color: 'var(--secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <User size={18} style={{ color: 'var(--primary)' }} /> Contact Details
-              </h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                Enter your contact info so the office coordinator can call you to confirm your ride.
-              </p>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    ref={fullNameRef}
-                    type="text"
-                    className="form-control"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required={!user}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Phone Number</label>
-                  <div style={{ display: 'flex' }}>
-                    <span style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0.375rem 0.75rem',
-                      backgroundColor: 'rgba(30, 41, 59, 0.05)',
-                      border: '1px solid var(--border-color)',
-                      borderRight: 'none',
-                      borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)',
-                      fontWeight: 600,
-                      color: 'var(--text-muted)',
-                      fontSize: '0.9rem'
-                    }}>+91</span>
-                    <input
-                      ref={phoneRef}
-                      type="tel"
-                      className="form-control"
-                      style={{ borderRadius: '0 var(--radius-sm) var(--radius-sm) 0' }}
-                      placeholder="99999 99999"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      required={!user}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           <form onSubmit={handleNext}>
             
@@ -1137,6 +1217,66 @@ function BookFormContent() {
               />
             )}
 
+            {/* Contact Details (Repositioned below Date & Time fields) */}
+            {!user && (
+              <div ref={contactDetailsRef} style={{
+                backgroundColor: 'rgba(249, 115, 22, 0.02)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-md)',
+                padding: '1.5rem',
+                marginBottom: '1.5rem',
+                marginTop: '1.5rem'
+              }}>
+                <h3 style={{ fontSize: '1rem', color: 'var(--secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <User size={18} style={{ color: 'var(--primary)' }} /> Contact Details
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                  Enter your contact info so the office coordinator can call you to confirm your ride.
+                </p>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Full Name</label>
+                    <input
+                      ref={fullNameRef}
+                      type="text"
+                      className="form-control"
+                      placeholder="John Doe"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required={!user}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Phone Number</label>
+                    <div style={{ display: 'flex' }}>
+                      <span style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0.375rem 0.75rem',
+                        backgroundColor: 'rgba(30, 41, 59, 0.05)',
+                        border: '1px solid var(--border-color)',
+                        borderRight: 'none',
+                        borderRadius: 'var(--radius-sm) 0 0 var(--radius-sm)',
+                        fontWeight: 600,
+                        color: 'var(--text-muted)',
+                        fontSize: '0.9rem'
+                      }}>+91</span>
+                      <input
+                        ref={phoneRef}
+                        type="tel"
+                        className="form-control"
+                        style={{ borderRadius: '0 var(--radius-sm) var(--radius-sm) 0' }}
+                        placeholder="99999 99999"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        required={!user}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Dynamic Calculated Distance Panel */}
             {pickupAddress && dropAddress && (
               <div style={{
@@ -1173,20 +1313,7 @@ function BookFormContent() {
               </div>
             )}
 
-            {/* Payment Mode Selector */}
-            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <DollarSign size={14} style={{ color: 'var(--primary)' }} /> Payment Mode
-              </label>
-              <select
-                className="form-control"
-                value={paymentMode}
-                onChange={(e: any) => setPaymentMode(e.target.value)}
-              >
-                <option value="cash">Cash</option>
-                <option value="upi">UPI (GPay / PhonePe / Paytm)</option>
-              </select>
-            </div>
+
 
             <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: '1.5rem' }}>
               Confirm Fare Estimate <ArrowRight size={20} />

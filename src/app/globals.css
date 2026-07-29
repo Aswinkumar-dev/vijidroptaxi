@@ -1097,6 +1097,7 @@ p {
 }
 
 .call-float-btn {
+  position: relative;
   width: 54px;
   height: 54px;
   border-radius: 50%;
@@ -1118,6 +1119,7 @@ p {
 }
 
 .whatsapp-icon-btn {
+  position: relative;
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -1141,6 +1143,56 @@ p {
 .whatsapp-icon-btn:hover {
   transform: scale(1.12) rotate(8deg);
   box-shadow: 0 6px 28px rgba(37, 211, 102, 0.75);
+}
+
+/* Floating button labels on hover */
+.float-btn-label {
+  position: absolute;
+  right: 70px;
+  color: white;
+  padding: 0.5rem 0.95rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(12px);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.call-float-btn .float-btn-label {
+  background-color: var(--primary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.whatsapp-icon-btn .float-btn-label {
+  background-color: #128C7E; /* WhatsApp dark teal/green */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.float-btn-label::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 6px 0 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent transparent var(--primary);
+}
+
+.whatsapp-icon-btn .float-btn-label::after {
+  border-color: transparent transparent transparent #128C7E;
+}
+
+.call-float-btn:hover .float-btn-label,
+.whatsapp-icon-btn:hover .float-btn-label {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
 }
 
 @keyframes call-pulse {
