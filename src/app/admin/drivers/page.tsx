@@ -67,13 +67,11 @@ export default function AdminDrivers() {
       if (profilesErr) throw profilesErr;
       setProfiles(profilesData || []);
 
-      // Fetch active cars
-      const { data: carsData, error: carsErr } = await supabase
-        .from('cars')
-        .select('*');
-
-      if (carsErr) throw carsErr;
-      setCars(carsData || []);
+      // Fetch active cars via API
+      const carsResponse = await fetch('/api/admin/cars');
+      const carsData = await carsResponse.json();
+      if (!carsResponse.ok) throw new Error(carsData.error || 'Failed to fetch cars');
+      setCars(carsData.cars || []);
 
     } catch (err: any) {
       setErrorMsg(err.message || 'Error occurred.');
@@ -107,15 +105,23 @@ export default function AdminDrivers() {
         payload.current_car_id = carId;
       }
 
-      const { error } = await supabase
-        .from('drivers')
-        .insert(payload);
+      const response = await fetch('/api/admin/drivers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profile_id: profileId,
+          license_number: licenseNumber.trim().toUpperCase(),
+          license_expiry: licenseExpiry || null,
+          current_car_id: carId || null,
+        }),
+      });
 
-      if (error) {
-        if (error.code === '23505') {
-          throw new Error('A driver profile or license number already exists for this registration.');
-        }
-        throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to link driver.');
       }
 
       setShowAddModal(false);
@@ -134,12 +140,23 @@ export default function AdminDrivers() {
 
   const toggleDriverActive = async (driverId: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from('drivers')
-        .update({ is_active: !currentStatus })
-        .eq('id', driverId);
+      const response = await fetch('/api/admin/drivers', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: driverId,
+          is_active: !currentStatus,
+        }),
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to toggle driver status.');
+      }
+
       fetchData();
     } catch (err: any) {
       alert(err.message || 'Error toggling driver status.');
@@ -310,6 +327,7 @@ export default function AdminDrivers() {
                 <input
                   type="date"
                   className="form-control"
+                  min="2026-01-01"
                   value={licenseExpiry}
                   onChange={(e) => setLicenseExpiry(e.target.value)}
                 />

@@ -257,15 +257,22 @@ export default function AdminCars() {
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button
                     onClick={() => openEditModal(car)}
-                    className="btn btn-sm btn-ghost"
-                    style={{ border: '1px solid var(--border-color)', color: 'var(--secondary)', fontWeight: 600, padding: '0.25rem 0.5rem' }}
+                    className="btn btn-sm"
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#F1F5F9',
+                      border: '1px solid #CBD5E1',
+                      color: 'var(--secondary)',
+                      fontWeight: 600,
+                      padding: '0.5rem'
+                    }}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => toggleCarActive(car.id, car.is_active)}
                     className={`btn btn-sm ${car.is_active ? 'btn-danger' : 'btn-primary'}`}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, padding: '0.5rem' }}
                   >
                     {car.is_active ? 'Mark Inactive' : 'Mark Active'}
                   </button>
