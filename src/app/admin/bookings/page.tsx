@@ -19,6 +19,7 @@ export default function AdminBookings() {
   const [driverId, setDriverId] = useState('');
   const [carId, setCarId] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [paymentModeSelect, setPaymentModeSelect] = useState('cash');
 
   const fetchData = async () => {
     try {
@@ -95,6 +96,7 @@ export default function AdminBookings() {
 
   const openAssignModal = (ride: any) => {
     setSelectedRide(ride);
+    setPaymentModeSelect(ride.payment_mode || 'cash');
     
     // Attempt to auto-prefill based on requested car type
     const matchingCars = cars.filter(c => c.car_type === ride.car_type);
@@ -127,7 +129,11 @@ export default function AdminBookings() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ driver_id: driverId, car_id: carId }),
+        body: JSON.stringify({ 
+          driver_id: driverId, 
+          car_id: carId,
+          payment_mode: paymentModeSelect
+        }),
       });
 
       const data = await response.json();
@@ -378,6 +384,20 @@ export default function AdminBookings() {
                     })}
                   </select>
                 )}
+              </div>
+
+              {/* Select Payment Mode */}
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label className="form-label">Payment Mode</label>
+                <select
+                  className="form-control"
+                  value={paymentModeSelect}
+                  onChange={(e) => setPaymentModeSelect(e.target.value)}
+                  required
+                >
+                  <option value="cash">CASH</option>
+                  <option value="upi">UPI</option>
+                </select>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem' }}>

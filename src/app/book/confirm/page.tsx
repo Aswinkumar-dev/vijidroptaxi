@@ -46,29 +46,19 @@ function ConfirmBookingContent() {
         .limit(1)
         .maybeSingle();
 
-      let base = 100;
       let rate = 15;
-      let allowance = 0;
 
       if (!error && data) {
         setFareRule(data);
-        base = Number(data.base_fare);
         rate = Number(data.per_km_rate);
-        allowance = Number(data.driver_allowance || 0);
       } else {
         if (carType === 'innova') {
-          base = 180; 
           rate = rideType === 'one_way' ? 21 : 20;
-          if (rideType === 'round_trip') allowance = 350;
         } else if (carType === 'suv') {
-          base = 150; 
           rate = rideType === 'one_way' ? 20 : 19;
-          if (rideType === 'round_trip') allowance = 300;
         } else {
           // sedan
-          base = 100; 
           rate = rideType === 'one_way' ? 15 : 14;
-          if (rideType === 'round_trip') allowance = 250;
         }
       }
 
@@ -76,12 +66,15 @@ function ConfirmBookingContent() {
         ? Math.max(distanceKm, 130) 
         : Math.max(distanceKm * 2, 250);
 
+      const base = 0;
+      const allowance = 400; // constant rs 400
+
       setCalculation({
         baseFare: base,
         perKmRate: rate,
         allowance,
         distanceKm: billedDistance,
-        totalFare: base + (billedDistance * rate) + allowance
+        totalFare: (billedDistance * rate) + allowance
       });
       setLoading(false);
     };
@@ -249,22 +242,13 @@ function ConfirmBookingContent() {
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+              <div style={{ marginTop: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Car size={16} style={{ color: 'var(--primary)' }} />
                   <div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Fleet Selected</div>
                     <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem', textTransform: 'capitalize' }}>
                       {carType} ({rideType === 'one_way' ? 'One Way' : 'Round Trip'})
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <CheckCircle size={16} style={{ color: 'var(--primary)' }} />
-                  <div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Payment</div>
-                    <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                      {paymentMode.replace('_', ' ')}
                     </div>
                   </div>
                 </div>
@@ -299,19 +283,13 @@ function ConfirmBookingContent() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <div className="receipt-row">
-                  <span>Base Booking Fare</span>
-                  <span>₹{calculation.baseFare.toFixed(2)}</span>
-                </div>
-                <div className="receipt-row">
                   <span>Distance Charge ({calculation.distanceKm} KM × ₹{calculation.perKmRate}/KM)</span>
                   <span>₹{(calculation.distanceKm * calculation.perKmRate).toFixed(2)}</span>
                 </div>
-                {calculation.allowance > 0 && (
-                  <div className="receipt-row">
-                    <span>Driver Allowance / Outstation Charge</span>
-                    <span>₹{calculation.allowance.toFixed(2)}</span>
-                  </div>
-                )}
+                <div className="receipt-row">
+                  <span>Driver Allowance</span>
+                  <span>₹{calculation.allowance.toFixed(2)}</span>
+                </div>
                 <div className="receipt-row receipt-row-bold">
                   <span>Total Payable Fare</span>
                   <span>₹{calculation.totalFare.toFixed(2)}</span>

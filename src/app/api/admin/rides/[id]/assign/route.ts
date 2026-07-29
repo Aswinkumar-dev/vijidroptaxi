@@ -30,7 +30,7 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden: Admins only' }, { status: 403 });
     }
 
-    const { driver_id, car_id } = await req.json();
+    const { driver_id, car_id, payment_mode } = await req.json();
 
     if (!driver_id || !car_id) {
       return NextResponse.json({ error: 'driver_id and car_id are required' }, { status: 400 });
@@ -71,6 +71,7 @@ export async function POST(
         car_id,
         otp: generatedOtp,
         status: 'confirmed',
+        payment_mode: payment_mode || 'cash',
         otp_attempts: 0,
         updated_at: new Date().toISOString(),
       })

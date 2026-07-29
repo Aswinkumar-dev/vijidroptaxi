@@ -1093,7 +1093,8 @@ function BookFormContent() {
                     {pickupSuggestions.map((place, idx) => (
                       <div
                         key={place.place_id || idx}
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault();
                           setPickupAddress(place.description);
                           setPickupPlaceId(place.place_id);
                           setShowPickupSuggestions(false);
@@ -1168,7 +1169,8 @@ function BookFormContent() {
                     {dropSuggestions.map((place, idx) => (
                       <div
                         key={place.place_id || idx}
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                          e.preventDefault();
                           setDropAddress(place.description);
                           setDropPlaceId(place.place_id);
                           setShowDropSuggestions(false);
