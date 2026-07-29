@@ -58,11 +58,11 @@ export default function AdminDrivers() {
       if (driversErr) throw driversErr;
       setDrivers(driversData || []);
 
-      // Fetch all registered profiles with role 'driver'
+      // Fetch all registered profiles with role 'driver' or 'admin'
       const { data: profilesData, error: profilesErr } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'driver');
+        .in('role', ['driver', 'admin']);
 
       if (profilesErr) throw profilesErr;
       setProfiles(profilesData || []);

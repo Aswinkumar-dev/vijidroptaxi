@@ -92,22 +92,35 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Admins only' }, { status: 403 });
     }
 
-    const { id, is_active } = await req.json();
+    const body = await req.json();
+    const { id } = body;
     if (!id) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
+
+    const updateData: any = {};
+    if (body.registration_number !== undefined) updateData.registration_number = body.registration_number.trim().toUpperCase();
+    if (body.brand !== undefined) updateData.brand = body.brand.trim();
+    if (body.model !== undefined) updateData.model = body.model.trim();
+    if (body.color !== undefined) updateData.color = body.color.trim();
+    if (body.car_type !== undefined) updateData.car_type = body.car_type;
+    if (body.seating_capacity !== undefined) updateData.seating_capacity = body.seating_capacity;
+    if (body.is_active !== undefined) updateData.is_active = body.is_active;
 
     const adminSupabase = createAdminClient();
 
     const { data: car, error } = await adminSupabase
       .from('cars')
-      .update({ is_active })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
       console.error('Error updating vehicle:', error);
+      if (error.code === '23505') {
+        return NextResponse.json({ error: 'A vehicle with this registration plate number is already registered.' }, { status: 409 });
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

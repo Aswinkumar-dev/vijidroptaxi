@@ -26,8 +26,8 @@ export async function POST(
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile || profile.role !== 'driver') {
-      return NextResponse.json({ error: 'Forbidden: Drivers only' }, { status: 403 });
+    if (profileError || !profile || (profile.role !== 'driver' && profile.role !== 'admin')) {
+      return NextResponse.json({ error: 'Forbidden: Drivers and Admins only' }, { status: 403 });
     }
 
     const adminSupabase = createAdminClient();

@@ -22,6 +22,16 @@ export default function AdminCars() {
   const [seatingCapacity, setSeatingCapacity] = useState(4);
   const [submitting, setSubmitting] = useState(false);
 
+  // Edit Car Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCarId, setEditingCarId] = useState('');
+  const [editRegistrationNumber, setEditRegistrationNumber] = useState('');
+  const [editBrand, setEditBrand] = useState('');
+  const [editModel, setEditModel] = useState('');
+  const [editColor, setEditColor] = useState('');
+  const [editCarType, setEditCarType] = useState<'sedan' | 'suv' | 'innova'>('sedan');
+  const [editSeatingCapacity, setEditSeatingCapacity] = useState(4);
+
   const fetchCars = async () => {
     try {
       setLoading(true);
@@ -135,6 +145,57 @@ export default function AdminCars() {
     }
   };
 
+  const openEditModal = (car: any) => {
+    setEditingCarId(car.id);
+    setEditRegistrationNumber(car.registration_number);
+    setEditBrand(car.brand);
+    setEditModel(car.model);
+    setEditColor(car.color);
+    setEditCarType(car.car_type);
+    setEditSeatingCapacity(car.seating_capacity);
+    setShowEditModal(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editRegistrationNumber || !editBrand || !editModel || !editColor) return;
+
+    setSubmitting(true);
+    setErrorMsg('');
+
+    try {
+      const response = await fetch('/api/admin/cars', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: editingCarId,
+          registration_number: editRegistrationNumber,
+          brand: editBrand,
+          model: editModel,
+          color: editColor,
+          car_type: editCarType,
+          seating_capacity: editSeatingCapacity,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update vehicle.');
+      }
+
+      setShowEditModal(false);
+      fetchCars();
+      alert('Vehicle updated successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Error occurred updating car.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div style={{ padding: '3rem 0', backgroundColor: 'var(--bg-color)', minHeight: '80vh' }}>
       <div className="container">
@@ -194,6 +255,13 @@ export default function AdminCars() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => openEditModal(car)}
+                    className="btn btn-sm btn-ghost"
+                    style={{ border: '1px solid var(--border-color)', color: 'var(--secondary)', fontWeight: 600, padding: '0.25rem 0.5rem' }}
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => toggleCarActive(car.id, car.is_active)}
                     className={`btn btn-sm ${car.is_active ? 'btn-danger' : 'btn-primary'}`}
@@ -313,6 +381,117 @@ export default function AdminCars() {
                   disabled={submitting}
                 >
                   {submitting ? 'Adding...' : 'Add Vehicle'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Edit Car Modal */}
+      {showEditModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
+            
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ color: 'var(--secondary)' }}>Edit Vehicle Details</h3>
+              <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Update vehicle specifications</p>
+            </div>
+
+            <form onSubmit={handleEditSubmit}>
+              
+              <div className="form-group">
+                <label className="form-label">Registration Number (License Plate)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. TN 31 CM 5648"
+                  value={editRegistrationNumber}
+                  onChange={(e) => setEditRegistrationNumber(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Brand / Make</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. Maruti"
+                    value={editBrand}
+                    onChange={(e) => setEditBrand(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Model</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. Suzuki Dzire"
+                    value={editModel}
+                    onChange={(e) => setEditModel(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Color</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. White"
+                    value={editColor}
+                    onChange={(e) => setEditColor(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Seating capacity</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={editSeatingCapacity}
+                    onChange={(e) => setEditSeatingCapacity(Math.max(1, Number(e.target.value)))}
+                    min="1"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Car Type Class</label>
+                <select
+                  className="form-control"
+                  value={editCarType}
+                  onChange={(e: any) => setEditCarType(e.target.value)}
+                  required
+                >
+                  <option value="sedan">Sedan (Comfort)</option>
+                  <option value="suv">SUV (Spacious)</option>
+                  <option value="innova">Innova (Premium)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ flex: 1, border: '1px solid var(--border-color)' }}
+                  onClick={() => setShowEditModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ flex: 2 }}
+                  disabled={submitting}
+                >
+                  {submitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
 

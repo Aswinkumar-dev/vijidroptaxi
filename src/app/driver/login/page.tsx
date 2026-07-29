@@ -37,13 +37,13 @@ export default function DriverLogin() {
         throw new Error('Profile details could not be found.');
       }
 
-      if (profile.role !== 'driver') {
+      if (profile.role !== 'driver' && profile.role !== 'admin') {
         await supabase.auth.signOut();
-        throw new Error(`This portal is for drivers only. Your account role is '${profile.role}'.`);
+        throw new Error(`This portal is for drivers/admins only. Your account role is '${profile.role}'.`);
       }
 
-      // Block if KYC not approved
-      if (profile.kyc_status !== 'approved') {
+      // Block if KYC not approved (only for driver role)
+      if (profile.role === 'driver' && profile.kyc_status !== 'approved') {
         await supabase.auth.signOut();
         throw new Error('Your KYC verification is still pending. You will be notified once it is approved by the admin.');
       }
