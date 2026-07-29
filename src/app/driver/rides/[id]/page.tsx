@@ -4,7 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { ShieldCheck, User, Phone, MapPin, Calendar, Clock, Lock, Key, ArrowLeft, RefreshCw } from 'lucide-react';
+import { ShieldCheck, User, Phone, MapPin, Calendar, Clock, Lock, Key, ArrowLeft, RefreshCw, Car } from 'lucide-react';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -19,11 +19,6 @@ export default function DriverRideControl({ params }: PageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   
-  // OTP input state
-  const [otpGuess, setOtpGuess] = useState('');
-  const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
-  const [isLocked, setIsLocked] = useState(false);
-
   const fetchRideDetails = async () => {
     try {
       setErrorMsg('');
@@ -35,10 +30,6 @@ export default function DriverRideControl({ params }: PageProps) {
       }
 
       setRide(data);
-      if (data.otp_attempts >= 5) {
-        setIsLocked(true);
-      }
-      setAttemptsRemaining(Math.max(0, 5 - data.otp_attempts));
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred.');
     } finally {
@@ -100,40 +91,25 @@ export default function DriverRideControl({ params }: PageProps) {
     }
   };
 
-  // Transition 2: OTP Verification
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpGuess.trim()) return;
-
+  // Transition 2: Start Ride (No OTP)
+  const handleStartRide = async () => {
     setSubmitting(true);
     setErrorMsg('');
 
     try {
-      const response = await fetch(`/api/driver/rides/${rideId}/verify-otp`, {
+      const response = await fetch(`/api/driver/rides/${rideId}/start`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ otp: otpGuess.trim() }),
       });
       
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.locked) {
-          setIsLocked(true);
-        }
-        if (typeof data.remainingAttempts === 'number') {
-          setAttemptsRemaining(data.remainingAttempts);
-        }
-        throw new Error(data.error || 'Incorrect OTP.');
+        throw new Error(data.error || 'Failed to start ride.');
       }
 
-      // Success
-      setOtpGuess('');
       fetchRideDetails();
     } catch (err: any) {
-      setErrorMsg(err.message || 'OTP verification failed.');
+      setErrorMsg(err.message || 'Failed to start ride.');
     } finally {
       setSubmitting(false);
     }
@@ -213,7 +189,7 @@ export default function DriverRideControl({ params }: PageProps) {
 
           <h2 style={{ fontSize: '1.5rem', color: 'var(--secondary)', marginBottom: '1.5rem' }}>
             {ride.status === 'confirmed' && 'Action Required: Drive to Pickup'}
-            {ride.status === 'driver_arrived' && 'Action Required: Verify OTP'}
+            {ride.status === 'driver_arrived' && 'Action Required: Start Trip'}
             {ride.status === 'ongoing' && 'Action Required: In Progress'}
             {ride.status === 'completed' && 'Ride Finished'}
           </h2>
@@ -232,51 +208,24 @@ export default function DriverRideControl({ params }: PageProps) {
             </button>
           )}
 
-          {/* Driver Arrived state: Enter passenger OTP */}
+          {/* Driver Arrived state: Start Trip action (no OTP) */}
           {ride.status === 'driver_arrived' && (
-            <div style={{ backgroundColor: '#F8FAFC', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--secondary)' }}>
-                <Key size={18} style={{ color: 'var(--primary)' }} />
-                <strong style={{ fontSize: '0.95rem' }}>Customer OTP Verification</strong>
+            <div style={{ backgroundColor: '#F8FAFC', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1rem', color: 'var(--secondary)' }}>
+                <Car size={18} style={{ color: 'var(--primary)' }} />
+                <strong style={{ fontSize: '0.95rem' }}>Start Trip Confirmation</strong>
               </div>
-
-              {isLocked ? (
-                <div style={{ color: 'var(--error)', fontSize: '0.9rem', fontWeight: 600, textAlign: 'center', padding: '1rem' }}>
-                  🚫 Verification Locked. Driver OTP attempts exceeded (5 failed guesses). Please ask customer to call support/admin to reset.
-                </div>
-              ) : (
-                <form onSubmit={handleVerifyOtp}>
-                  <div className="form-group">
-                    <label className="form-label">Ask passenger for the 4-digit code shown on their screen:</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Enter 4-digit OTP"
-                      style={{ fontSize: '1.5rem', letterSpacing: '0.2em', textAlign: 'center', padding: '0.6rem' }}
-                      maxLength={4}
-                      value={otpGuess}
-                      onChange={(e) => setOtpGuess(e.target.value.replace(/\D/g, ''))}
-                      required
-                      disabled={submitting}
-                    />
-                  </div>
-                  
-                  {attemptsRemaining !== null && (
-                    <div style={{ fontSize: '0.8rem', color: attemptsRemaining <= 2 ? 'var(--error)' : 'var(--text-muted)', marginBottom: '1rem', textAlign: 'center' }}>
-                      {attemptsRemaining} failed attempts remaining before lock
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    style={{ width: '100%' }}
-                    disabled={submitting || otpGuess.length < 4}
-                  >
-                    {submitting ? 'Verifying OTP...' : 'Start Ride'}
-                  </button>
-                </form>
-              )}
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                Please confirm you have met the passenger and are ready to start the trip.
+              </p>
+              <button
+                onClick={handleStartRide}
+                className="btn btn-primary btn-lg"
+                style={{ width: '100%' }}
+                disabled={submitting}
+              >
+                {submitting ? 'Starting Ride...' : 'Start Trip'}
+              </button>
             </div>
           )}
 

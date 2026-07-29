@@ -76,30 +76,14 @@ function SuccessContent() {
           )}
         </div>
 
-        {/* OTP Warning Banner */}
-        <div style={{
-          backgroundColor: 'rgba(249, 115, 22, 0.08)',
-          border: '1px solid rgba(249, 115, 22, 0.25)',
-          borderRadius: 'var(--radius-md)',
-          padding: '1.25rem 1.5rem',
-          marginBottom: '1.25rem',
-          textAlign: 'center',
-        }}>
-          <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--secondary)', lineHeight: 1.65, margin: 0 }}>
-            You will receive an OTP via SMS. Please share it with your driver before starting your ride.
-          </p>
-        </div>
-
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>
-          📞 Our coordinator will call you on <strong>{phone}</strong> to confirm your pickup details.
-        </p>
-
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <Link href="/book" className="btn btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-            <Car size={16} /> Book Another Ride
-          </Link>
-          <Link href="/" className="btn btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
+          <a href="tel:+916382882740" className="btn btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <Phone size={16} /> Call Dispatcher 1 (+91 63828 82740)
+          </a>
+          <a href="tel:+916384819045" className="btn btn-primary" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <Phone size={16} /> Call Dispatcher 2 (+91 63848 19045)
+          </a>
+          <Link href="/" className="btn btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
             <Home size={16} /> Back to Home
           </Link>
         </div>

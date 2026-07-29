@@ -216,7 +216,7 @@ export default function AdminBookings() {
                   <th>Trip Details</th>
                   <th>Route & Distance</th>
                   <th>Cost & Payment</th>
-                  <th>Status & OTP</th>
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -271,11 +271,6 @@ export default function AdminBookings() {
                       <span className={`badge badge-${ride.status}`} style={{ fontSize: '0.65rem' }}>
                         {ride.status.replace('_', ' ')}
                       </span>
-                      {ride.otp && (
-                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', marginTop: '0.4rem', fontFamily: 'monospace' }}>
-                          OTP: {ride.otp}
-                        </div>
-                      )}
                       {ride.driver && (
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>
                           Driver: <strong>{ride.driver.profile?.full_name?.split(' ')[0]}</strong>
@@ -415,7 +410,7 @@ export default function AdminBookings() {
                   style={{ flex: 2 }}
                   disabled={assigning || getFilteredCars().length === 0 || drivers.length === 0}
                 >
-                  {assigning ? 'Assigning...' : 'Dispatch Ride & Generate OTP'}
+                  {assigning ? 'Assigning...' : 'Confirm & Dispatch Ride'}
                 </button>
               </div>
 

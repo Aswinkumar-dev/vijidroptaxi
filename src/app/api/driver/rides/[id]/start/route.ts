@@ -19,55 +19,57 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify admin role
+    // Get user profile role
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile || profile.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden: Admins only' }, { status: 403 });
-    }
-
-    const { driver_id, car_id, payment_mode } = await req.json();
-
-    if (!driver_id || !car_id) {
-      return NextResponse.json({ error: 'driver_id and car_id are required' }, { status: 400 });
+    if (profileError || !profile || profile.role !== 'driver') {
+      return NextResponse.json({ error: 'Forbidden: Drivers only' }, { status: 403 });
     }
 
     const adminSupabase = createAdminClient();
 
-    // Verify driver exists and is active
+    // Get driver record
     const { data: driver, error: driverError } = await adminSupabase
       .from('drivers')
-      .select('*')
-      .eq('id', driver_id)
+      .select('id')
+      .eq('profile_id', user.id)
       .single();
 
-    if (driverError || !driver || !driver.is_active) {
-      return NextResponse.json({ error: 'Active driver not found' }, { status: 404 });
+    if (driverError || !driver) {
+      return NextResponse.json({ error: 'Driver profile not found' }, { status: 404 });
     }
 
-    // Verify car exists and is active
-    const { data: car, error: carError } = await adminSupabase
-      .from('cars')
+    // Retrieve ride details
+    const { data: ride, error: rideError } = await adminSupabase
+      .from('rides')
       .select('*')
-      .eq('id', car_id)
+      .eq('id', rideId)
       .single();
 
-    if (carError || !car || !car.is_active) {
-      return NextResponse.json({ error: 'Active vehicle not found' }, { status: 404 });
+    if (rideError || !ride) {
+      return NextResponse.json({ error: 'Ride not found' }, { status: 404 });
     }
 
-    // Update ride to confirmed with assigned driver and car
+    // Verify driver assignment
+    if (ride.driver_id !== driver.id) {
+      return NextResponse.json({ error: 'Forbidden: You are not assigned to this ride' }, { status: 403 });
+    }
+
+    // Verify ride state
+    if (ride.status !== 'driver_arrived') {
+      return NextResponse.json({ error: `Invalid transition: Current status is ${ride.status}` }, { status: 400 });
+    }
+
+    // SUCCESS: Transition status to ongoing (started)
     const { data: updatedRide, error: updateError } = await adminSupabase
       .from('rides')
       .update({
-        driver_id,
-        car_id,
-        status: 'confirmed',
-        payment_mode: payment_mode || 'cash',
+        status: 'ongoing',
+        started_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', rideId)
@@ -75,23 +77,23 @@ export async function POST(
       .single();
 
     if (updateError) {
-      console.error('Error assigning driver:', updateError);
+      console.error('Error updating ride to ongoing:', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
     // Record status history
     await adminSupabase.from('ride_status_history').insert({
       ride_id: rideId,
-      status: 'confirmed',
+      status: 'ongoing',
       changed_by: user.id,
     });
 
     return NextResponse.json({
-      message: 'Driver and car assigned successfully',
+      message: 'Ride started successfully.',
       ride: updatedRide,
     });
   } catch (error: any) {
-    console.error('Server error assigning driver:', error);
+    console.error('Server error starting ride:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
