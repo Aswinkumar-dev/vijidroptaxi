@@ -234,9 +234,7 @@ export default function AdminDashboard() {
                 <Link href="/admin/bookings" className="btn btn-primary" style={{ justifyContent: 'flex-start' }}>
                   Manual Dispatch Board
                 </Link>
-                <Link href="/admin/pricing" className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>
-                  Edit Base & Per-KM Rates
-                </Link>
+
                 <Link href="/admin/reviews" className="btn btn-outline" style={{ justifyContent: 'flex-start' }}>
                   View Moderation Reviews
                 </Link>

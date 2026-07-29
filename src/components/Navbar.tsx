@@ -83,7 +83,6 @@ export default function Navbar() {
           <Link href="/admin/drivers" className={`nav-link ${isActive('/admin/drivers') ? 'nav-link-active' : ''}`}>Drivers</Link>
           <Link href="/admin/kyc" className={`nav-link ${isActive('/admin/kyc') ? 'nav-link-active' : ''}`}>KYC Review</Link>
           <Link href="/admin/cars" className={`nav-link ${isActive('/admin/cars') ? 'nav-link-active' : ''}`}>Cars</Link>
-          <Link href="/admin/pricing" className={`nav-link ${isActive('/admin/pricing') ? 'nav-link-active' : ''}`}>Pricing</Link>
           <Link href="/admin/reviews" className={`nav-link ${isActive('/admin/reviews') ? 'nav-link-active' : ''}`}>Reviews</Link>
           <div className="user-pill" onClick={handleLogout} style={{ border: '1px solid var(--primary)', color: 'var(--primary)' }}>
             <LogOut size={16} />
@@ -171,7 +170,6 @@ export default function Navbar() {
               <Link href="/admin/drivers" className="nav-link" onClick={() => setMenuOpen(false)}>Drivers</Link>
               <Link href="/admin/kyc" className="nav-link" onClick={() => setMenuOpen(false)}>KYC Review</Link>
               <Link href="/admin/cars" className="nav-link" onClick={() => setMenuOpen(false)}>Cars</Link>
-              <Link href="/admin/pricing" className="nav-link" onClick={() => setMenuOpen(false)}>Pricing</Link>
               <Link href="/admin/reviews" className="nav-link" onClick={() => setMenuOpen(false)}>Reviews</Link>
               <button className="btn btn-outline" onClick={handleLogout}>Sign Out</button>
             </>

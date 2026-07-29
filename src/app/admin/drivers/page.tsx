@@ -45,18 +45,11 @@ export default function AdminDrivers() {
         return;
       }
 
-      // Fetch drivers joined with profiles and cars
-      const { data: driversData, error: driversErr } = await supabase
-        .from('drivers')
-        .select(`
-          *,
-          profile:profiles(id, full_name, phone, role),
-          car:cars(*)
-        `)
-        .order('joined_at', { ascending: false });
-
-      if (driversErr) throw driversErr;
-      setDrivers(driversData || []);
+      // Fetch drivers via secure GET API
+      const driversResponse = await fetch('/api/admin/drivers');
+      const driversData = await driversResponse.json();
+      if (!driversResponse.ok) throw new Error(driversData.error || 'Failed to fetch drivers');
+      setDrivers(driversData.drivers || []);
 
       // Fetch all registered profiles with role 'driver' or 'admin'
       const { data: profilesData, error: profilesErr } = await supabase
