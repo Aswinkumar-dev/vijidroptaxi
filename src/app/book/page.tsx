@@ -345,8 +345,8 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
               
               {/* Header preview showing current selection */}
               <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.4rem', userSelect: 'none' }}>
-                {/* Numbers */}
-                <div style={{ display: 'flex', gap: '3px', fontSize: '1.4rem', fontWeight: 800 }}>
+                {/* Numbers and selected AM/PM period inline with exact same height */}
+                <div style={{ display: 'flex', gap: '3px', fontSize: '1.4rem', fontWeight: 800, alignItems: 'baseline' }}>
                   <span 
                     onClick={() => setClockMode('hour')} 
                     style={{ 
@@ -372,46 +372,15 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
                   >
                     {selectedMinute}
                   </span>
-                </div>
-
-                {/* AM/PM stacked selector (matches the height of large digits) */}
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  height: '1.45rem',
-                  marginLeft: '10px',
-                  fontSize: '0.7rem',
-                  fontWeight: 800,
-                  lineHeight: 1
-                }}>
-                  <span 
-                    onClick={() => handleTimeSelect('period', 'AM')}
-                    style={{
-                      color: selectedPeriod === 'AM' ? 'var(--primary)' : '#94a3b8',
-                      cursor: 'pointer',
-                      padding: '1px 4px',
-                      borderRadius: '4px',
-                      backgroundColor: selectedPeriod === 'AM' ? 'rgba(249, 115, 22, 0.12)' : 'transparent',
-                      transition: 'all 0.2s',
-                      textAlign: 'center'
-                    }}
-                  >
-                    AM
-                  </span>
-                  <span 
-                    onClick={() => handleTimeSelect('period', 'PM')}
-                    style={{
-                      color: selectedPeriod === 'PM' ? 'var(--primary)' : '#94a3b8',
-                      cursor: 'pointer',
-                      padding: '1px 4px',
-                      borderRadius: '4px',
-                      backgroundColor: selectedPeriod === 'PM' ? 'rgba(249, 115, 22, 0.12)' : 'transparent',
-                      transition: 'all 0.2s',
-                      textAlign: 'center'
-                    }}
-                  >
-                    PM
+                  <span style={{ 
+                    color: '#94a3b8',
+                    marginLeft: '8px',
+                    fontSize: '1.4rem',
+                    fontWeight: 800,
+                    lineHeight: 1.1,
+                    textTransform: 'uppercase'
+                  }}>
+                    {selectedPeriod}
                   </span>
                 </div>
               </div>

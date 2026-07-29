@@ -35,7 +35,7 @@ Please share the estimated fare and vehicle availability.`
         title="Call us now"
       >
         <Phone size={26} strokeWidth={2.5} />
-        <span className="float-btn-label">Call to book the ride 📞</span>
+        <span className="float-btn-label">Call to book the ride</span>
       </a>
 
       {/* WhatsApp Button */}
@@ -47,7 +47,7 @@ Please share the estimated fare and vehicle availability.`
         title="Chat on WhatsApp"
       >
         <img src="/assets/whatsapp.png" alt="WhatsApp logo" />
-        <span className="float-btn-label">Book a ride in WhatsApp 💬</span>
+        <span className="float-btn-label">Book a ride in WhatsApp</span>
       </a>
     </div>
   );
