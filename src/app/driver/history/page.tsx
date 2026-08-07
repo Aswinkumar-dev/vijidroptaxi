@@ -13,40 +13,11 @@ export default function DriverHistory() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Date Filtering State (starts from August 2026)
-  const [selectedMonth, setSelectedMonth] = useState<string>('2026-08');
-  const [selectedDay, setSelectedDay] = useState<string>('all');
+  // Date Filtering State (strictly starting from August 2026)
+  const [selectedDate, setSelectedDate] = useState<string>(''); // empty string means "All Dates"
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // Dynamically compute available months starting from August 2026
-  const availableMonths = React.useMemo(() => {
-    const monthsSet = new Set<string>();
-    
-    // Always include August 2026
-    monthsSet.add('2026-08');
-
-    rides.forEach(r => {
-      const dateStr = r.completed_at || r.scheduled_at;
-      if (dateStr) {
-        const d = new Date(dateStr);
-        if (!isNaN(d.getTime())) {
-          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          if (ym >= '2026-08') {
-            monthsSet.add(ym);
-          }
-        }
-      }
-    });
-    return Array.from(monthsSet).sort();
-  }, [rides]);
-
-  const formatYearMonth = (ym: string) => {
-    const [year, month] = ym.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
-    return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-  };
-
-  // Filter rides based on selectedMonth and selectedDay (August 2026 onwards)
+  // Filter rides based on selectedDate (August 2026 onwards)
   const filteredRides = React.useMemo(() => {
     return rides.filter(ride => {
       const dateStr = ride.completed_at || ride.scheduled_at;
@@ -61,20 +32,15 @@ export default function DriverHistory() {
       // Enforce the starting point constraint: August 2026 or later
       if (ym < '2026-08') return false;
 
-      // Month filter
-      if (selectedMonth !== 'all' && ym !== selectedMonth) {
-        return false;
-      }
-      
-      // Day filter
-      if (selectedDay !== 'all') {
-        const day = String(rideDate.getDate());
-        if (day !== selectedDay) return false;
+      // Calendar Date filter (Format: YYYY-MM-DD)
+      if (selectedDate !== '') {
+        const rideDateStr = `${year}-${month}-${String(rideDate.getDate()).padStart(2, '0')}`;
+        if (rideDateStr !== selectedDate) return false;
       }
       
       return true;
     });
-  }, [rides, selectedMonth, selectedDay]);
+  }, [rides, selectedDate]);
 
   // Paginated rides
   const recordsPerPage = 10;
@@ -224,56 +190,32 @@ export default function DriverHistory() {
 
         {/* Date Filter Panel */}
         <div className="card" style={{ padding: '1.25rem', marginBottom: '2.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', backgroundColor: 'var(--card-color)' }}>
-          <div style={{ flex: '1', minWidth: '200px' }}>
+          <div style={{ flex: '1', minWidth: '240px' }}>
             <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--secondary)' }}>
-              Select Month
+              Select Date (August 2026 onwards)
             </label>
-            <select
+            <input
+              type="date"
               className="form-control"
-              value={selectedMonth}
+              min="2026-08-01"
+              value={selectedDate}
               onChange={(e) => {
-                setSelectedMonth(e.target.value);
+                setSelectedDate(e.target.value);
                 setCurrentPage(1);
               }}
-              style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-color)', fontSize: '0.9rem' }}
-            >
-              <option value="all">All Months (Aug 2026 onwards)</option>
-              {availableMonths.map(ym => (
-                <option key={ym} value={ym}>{formatYearMonth(ym)}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div style={{ flex: '1', minWidth: '150px' }}>
-            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--secondary)' }}>
-              Select Day
-            </label>
-            <select
-              className="form-control"
-              value={selectedDay}
-              onChange={(e) => {
-                setSelectedDay(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-color)', fontSize: '0.9rem' }}
-            >
-              <option value="all">All Days</option>
-              {Array.from({ length: 31 }, (_, i) => String(i + 1)).map(day => (
-                <option key={day} value={day}>{day}</option>
-              ))}
-            </select>
+              style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-color)', fontSize: '0.9rem', color: 'var(--secondary)' }}
+            />
           </div>
 
           <button
             onClick={() => {
-              setSelectedMonth('2026-08');
-              setSelectedDay('all');
+              setSelectedDate('');
               setCurrentPage(1);
             }}
             className="btn btn-ghost btn-sm"
             style={{ border: '1px solid var(--border-color)', height: '40px', padding: '0 1rem', display: 'flex', alignItems: 'center' }}
           >
-            Clear Filters
+            Show All Dates
           </button>
         </div>
 
