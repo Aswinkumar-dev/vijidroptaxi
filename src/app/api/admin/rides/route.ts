@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       payment_mode,
     } = await req.json();
 
-    if (!customer_name || !customer_phone || !pickup_address || !drop_address || !scheduled_at || !car_type || !total_fare) {
+    if (!customer_phone || !pickup_address || !drop_address || !scheduled_at || !car_type || !total_fare) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const { data: ride, error } = await adminSupabase
       .from('rides')
       .insert({
-        customer_name,
+        customer_name: customer_name ? customer_name.trim() : 'Guest',
         customer_phone,
         ride_type,
         pickup_address,
@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
         car_type,
         distance_km: Number(distance_km) || 0,
         total_fare: Number(total_fare),
-        driver_allowance: 400.00,
         payment_mode: payment_mode || 'cash',
         status: 'pending',
         payment_status: 'unpaid',
