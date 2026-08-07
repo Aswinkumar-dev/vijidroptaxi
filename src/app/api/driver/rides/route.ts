@@ -39,17 +39,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Driver profile not found' }, { status: 404 });
     }
 
-    // Fetch active rides for this driver (status in confirmed, driver_arrived, ongoing)
-    const { data: rides, error: ridesError } = await adminSupabase
+    const url = new URL(req.url);
+    const history = url.searchParams.get('history') === 'true';
+
+    // Fetch rides for this driver
+    let dbQuery = adminSupabase
       .from('rides')
       .select(`
         *,
         customer:profiles!rides_customer_id_fkey(id, full_name, phone),
         car:cars(*)
       `)
-      .eq('driver_id', driver.id)
-      .in('status', ['confirmed', 'driver_arrived', 'ongoing'])
-      .order('scheduled_at', { ascending: true });
+      .eq('driver_id', driver.id);
+
+    if (history) {
+      dbQuery = dbQuery.eq('status', 'completed');
+    } else {
+      dbQuery = dbQuery.in('status', ['confirmed', 'driver_arrived', 'ongoing']);
+    }
+
+    const { data: rides, error: ridesError } = await dbQuery
+      .order('scheduled_at', { ascending: !history });
 
     if (ridesError) {
       console.error('Error fetching driver rides:', ridesError);

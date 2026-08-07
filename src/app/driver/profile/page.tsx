@@ -27,29 +27,15 @@ export default function DriverProfile() {
 
   const fetchDriverProfile = async (userId: string) => {
     try {
-      // 1. Get profile
-      const { data: profileData, error: profileErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      if (profileErr) throw profileErr;
-      setProfile(profileData);
+      const response = await fetch('/api/driver/profile');
+      const data = await response.json();
 
-      // 2. Get driver record and vehicle
-      const { data: driverData, error: driverErr } = await supabase
-        .from('drivers')
-        .select(`
-          *,
-          car:cars(*)
-        `)
-        .eq('profile_id', userId)
-        .single();
-
-      if (driverErr && driverErr.code !== 'PGRST116') {
-        throw driverErr;
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to load driver profile details.');
       }
-      setDriver(driverData || null);
+
+      setProfile(data.profile);
+      setDriver(data.driver || null);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to load driver profile details.');
     } finally {

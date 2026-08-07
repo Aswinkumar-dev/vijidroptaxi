@@ -25,30 +25,15 @@ export default function DriverDashboard() {
         return;
       }
 
-      // 2. Fetch profile details first
-      const { data: profile, error: profileErr } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('id', user.id)
-        .single();
+      // 2. Fetch driver profile & record from server
+      const profileResponse = await fetch('/api/driver/profile');
+      const profileData = await profileResponse.json();
 
-      if (profileErr || !profile) {
-        throw new Error('User profile details could not be found.');
+      if (!profileResponse.ok) {
+        throw new Error(profileData.error || 'Failed to fetch driver profile.');
       }
 
-      // 3. Fetch driver record
-      const { data: driverData, error: driverErr } = await supabase
-        .from('drivers')
-        .select(`
-          *,
-          car:cars(*)
-        `)
-        .eq('profile_id', user.id)
-        .single();
-
-      if (driverErr && driverErr.code !== 'PGRST116') {
-        throw driverErr;
-      }
+      const { driver: driverData, profile } = profileData;
 
       if (driverData) {
         setDriver({
@@ -56,7 +41,7 @@ export default function DriverDashboard() {
           profile: profile
         });
 
-        // 4. Fetch active rides
+        // 3. Fetch active rides
         const response = await fetch('/api/driver/rides');
         const data = await response.json();
 

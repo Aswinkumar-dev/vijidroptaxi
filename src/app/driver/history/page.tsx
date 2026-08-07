@@ -86,16 +86,15 @@ export default function DriverHistory() {
         return;
       }
 
-      // Fetch driver ID
-      const { data: driver, error: driverErr } = await supabase
-        .from('drivers')
-        .select('id')
-        .eq('profile_id', user.id)
-        .single();
+      // Fetch driver profile from server
+      const profileResponse = await fetch('/api/driver/profile');
+      const profileData = await profileResponse.json();
 
-      if (driverErr && driverErr.code !== 'PGRST116') {
-        throw driverErr;
+      if (!profileResponse.ok) {
+        throw new Error(profileData.error || 'Failed to fetch driver profile.');
       }
+
+      const { driver } = profileData;
 
       if (!driver) {
         // Driver is not linked yet
@@ -105,22 +104,18 @@ export default function DriverHistory() {
         return;
       }
 
-      // Fetch completed rides for this driver
-      const { data: completedRides, error: ridesErr } = await supabase
-        .from('rides')
-        .select(`
-          *,
-          customer:profiles!rides_customer_id_fkey(id, full_name, phone)
-        `)
-        .eq('driver_id', driver.id)
-        .eq('status', 'completed')
-        .order('completed_at', { ascending: false });
+      // Fetch completed rides for this driver from server
+      const ridesResponse = await fetch('/api/driver/rides?history=true');
+      const completedRides = await ridesResponse.json();
 
-      if (ridesErr) throw ridesErr;
+      if (!ridesResponse.ok) {
+        throw new Error(completedRides.error || 'Failed to fetch ride history.');
+      }
+
       setRides(completedRides || []);
 
       // Calculate total earnings
-      const total = (completedRides || []).reduce((acc, curr) => acc + Number(curr.total_fare || 0), 0);
+      const total = (completedRides || []).reduce((acc: any, curr: any) => acc + Number(curr.total_fare || 0), 0);
       setEarnings(total);
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred.');
