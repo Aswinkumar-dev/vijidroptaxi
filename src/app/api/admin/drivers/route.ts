@@ -23,7 +23,38 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Admins only' }, { status: 403 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const unlinkedOnly = searchParams.get('unlinked') === 'true';
+
     const adminSupabase = createAdminClient();
+
+    if (unlinkedOnly) {
+      // 1. Fetch all profiles with role 'driver' or 'admin'
+      const { data: profiles, error: profilesError } = await adminSupabase
+        .from('profiles')
+        .select('id, full_name, phone, role')
+        .in('role', ['driver', 'admin']);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return NextResponse.json({ error: profilesError.message }, { status: 500 });
+      }
+
+      // 2. Fetch all linked profile IDs from drivers table
+      const { data: linkedDrivers, error: driversError } = await adminSupabase
+        .from('drivers')
+        .select('profile_id');
+
+      if (driversError) {
+        console.error('Error fetching linked drivers:', driversError);
+        return NextResponse.json({ error: driversError.message }, { status: 500 });
+      }
+
+      const linkedIds = (linkedDrivers || []).map(d => d.profile_id);
+      const unlinkedProfiles = (profiles || []).filter(p => !linkedIds.includes(p.id));
+
+      return NextResponse.json({ profiles: unlinkedProfiles });
+    }
 
     const { data: drivers, error } = await adminSupabase
       .from('drivers')

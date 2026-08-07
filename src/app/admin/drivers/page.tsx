@@ -51,14 +51,11 @@ export default function AdminDrivers() {
       if (!driversResponse.ok) throw new Error(driversData.error || 'Failed to fetch drivers');
       setDrivers(driversData.drivers || []);
 
-      // Fetch all registered profiles with role 'driver' or 'admin'
-      const { data: profilesData, error: profilesErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('role', ['driver', 'admin']);
-
-      if (profilesErr) throw profilesErr;
-      setProfiles(profilesData || []);
+      // Fetch all unlinked registered profiles via secure API
+      const profilesResponse = await fetch('/api/admin/drivers?unlinked=true');
+      const profilesData = await profilesResponse.json();
+      if (!profilesResponse.ok) throw new Error(profilesData.error || 'Failed to fetch unlinked profiles');
+      setProfiles(profilesData.profiles || []);
 
       // Fetch active cars via API
       const carsResponse = await fetch('/api/admin/cars');
@@ -158,8 +155,7 @@ export default function AdminDrivers() {
 
   // Determine profiles that have NOT been linked in drivers table yet
   const getUnlinkedProfiles = () => {
-    const linkedProfileIds = drivers.map(d => d.profile_id);
-    return profiles.filter(p => !linkedProfileIds.includes(p.id));
+    return profiles;
   };
 
   return (
