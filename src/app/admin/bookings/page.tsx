@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, MapPin, Calendar, Clock, User, Car, Tag, Check, X, ShieldAlert } from 'lucide-react';
+import { RefreshCw, MapPin, Calendar, Clock, User, Car, Tag, Check, X, ShieldAlert, Plus } from 'lucide-react';
 
 export default function AdminBookings() {
   const router = useRouter();
@@ -13,6 +13,100 @@ export default function AdminBookings() {
   const [cars, setCars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Date Filtering State (starts from August 2026)
+  const [selectedMonth, setSelectedMonth] = useState<string>('2026-08');
+  const [selectedDay, setSelectedDay] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Dynamically compute available months starting from August 2026
+  const availableMonths = React.useMemo(() => {
+    const monthsSet = new Set<string>();
+    
+    // Always include August 2026 as the starting month
+    monthsSet.add('2026-08');
+
+    bookings.forEach(b => {
+      if (b.scheduled_at) {
+        const d = new Date(b.scheduled_at);
+        if (!isNaN(d.getTime())) {
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          // Only show months starting from August 2026
+          if (ym >= '2026-08') {
+            monthsSet.add(ym);
+          }
+        }
+      }
+    });
+    return Array.from(monthsSet).sort();
+  }, [bookings]);
+
+  const formatYearMonth = (ym: string) => {
+    const [year, month] = ym.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  };
+
+  // Filter bookings based on selectedMonth and selectedDay (only August 2026 onwards)
+  const filteredBookings = React.useMemo(() => {
+    return bookings.filter(ride => {
+      if (!ride.scheduled_at) return false;
+      const rideDate = new Date(ride.scheduled_at);
+      if (isNaN(rideDate.getTime())) return false;
+      
+      const year = rideDate.getFullYear();
+      const month = String(rideDate.getMonth() + 1).padStart(2, '0');
+      const ym = `${year}-${month}`;
+      
+      // Enforce the starting point constraint: strictly August 2026 or later
+      if (ym < '2026-08') return false;
+
+      // Month filter
+      if (selectedMonth !== 'all' && ym !== selectedMonth) {
+        return false;
+      }
+      
+      // Day filter
+      if (selectedDay !== 'all') {
+        const day = String(rideDate.getDate());
+        if (day !== selectedDay) return false;
+      }
+      
+      return true;
+    });
+  }, [bookings, selectedMonth, selectedDay]);
+
+  // Paginated bookings
+  const recordsPerPage = 10;
+  const totalPages = Math.ceil(filteredBookings.length / recordsPerPage);
+  const activePage = Math.min(currentPage, totalPages || 1);
+  const indexOfLastRecord = activePage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredBookings.slice(indexOfFirstRecord, indexOfLastRecord);
+
+  // Helper for generating page numbers with ellipses
+  const getPageNumbers = (current: number, total: number) => {
+    const pages: (number | string)[] = [];
+    if (total <= 5) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (current > 3) pages.push('...');
+      
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+      
+      for (let i = start; i <= end; i++) {
+        if (pages[pages.length - 1] !== i) {
+          pages.push(i);
+        }
+      }
+      
+      if (current < total - 2) pages.push('...');
+      if (total > 1 && pages[pages.length - 1] !== total) pages.push(total);
+    }
+    return pages;
+  };
   
   // Assignment Modal State
   const [selectedRide, setSelectedRide] = useState<any>(null);
@@ -21,9 +115,25 @@ export default function AdminBookings() {
   const [assigning, setAssigning] = useState(false);
   const [paymentModeSelect, setPaymentModeSelect] = useState('cash');
 
-  const fetchData = async () => {
+  // Create Manual Booking Modal State
+  const [showAddBookingModal, setShowAddBookingModal] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
+  const [newRideType, setNewRideType] = useState<'one_way' | 'round_trip'>('one_way');
+  const [newPickupAddress, setNewPickupAddress] = useState('');
+  const [newDropAddress, setNewDropAddress] = useState('');
+  const [newScheduledDate, setNewScheduledDate] = useState('');
+  const [newScheduledTime, setNewScheduledTime] = useState('');
+  const [newReturnDate, setNewReturnDate] = useState('');
+  const [newReturnTime, setNewReturnTime] = useState('');
+  const [newCarType, setNewCarType] = useState<'sedan' | 'suv' | 'innova'>('sedan');
+  const [newDistanceKm, setNewDistanceKm] = useState('');
+  const [newTotalFare, setNewTotalFare] = useState('');
+  const [newPaymentMode, setNewPaymentMode] = useState<'cash' | 'upi'>('cash');
+
+  const fetchData = async (quiet = false) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
       setErrorMsg('');
 
       // Authenticate & Verify admin role
@@ -44,21 +154,13 @@ export default function AdminBookings() {
         return;
       }
 
-      // Fetch all bookings (using client-side query)
-      const { data: ridesData, error: ridesErr } = await supabase
-        .from('rides')
-        .select(`
-          *,
-          customer:profiles!rides_customer_id_fkey(id, full_name, phone),
-          driver:drivers(
-            id,
-            profile:profiles(id, full_name, phone)
-          ),
-          car:cars(*)
-        `)
-        .order('scheduled_at', { ascending: false });
+      // Fetch all bookings using server-side API (bypassing client-side RLS)
+      const res = await fetch('/api/admin/rides');
+      const ridesData = await res.json();
 
-      if (ridesErr) throw ridesErr;
+      if (!res.ok) {
+        throw new Error(ridesData.error || 'Failed to fetch bookings.');
+      }
       setBookings(ridesData || []);
 
       // Fetch active drivers
@@ -92,6 +194,13 @@ export default function AdminBookings() {
 
   useEffect(() => {
     fetchData();
+
+    // Auto-refresh bookings quietly in the background every 20 seconds
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 20000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const openAssignModal = (ride: any) => {
@@ -156,20 +265,87 @@ export default function AdminBookings() {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
     
     try {
-      const { error } = await supabase
-        .from('rides')
-        .update({
-          status: 'cancelled',
-          cancelled_reason: 'Cancelled by administrator dispatcher',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', rideId);
+      const response = await fetch(`/api/admin/rides/${rideId}/cancel`, {
+        method: 'POST',
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to cancel booking.');
+      }
+
       fetchData();
       alert('Booking cancelled successfully.');
     } catch (err: any) {
       alert(err.message || 'Error cancelling booking.');
+    }
+  };
+
+  const handleCreateBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustomerName || !newCustomerPhone || !newPickupAddress || !newDropAddress || !newScheduledDate || !newScheduledTime || !newTotalFare) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    setAssigning(true);
+    setErrorMsg('');
+
+    try {
+      const scheduledAt = new Date(`${newScheduledDate}T${newScheduledTime}`).toISOString();
+      let returnScheduledAt = null;
+      if (newRideType === 'round_trip' && newReturnDate && newReturnTime) {
+        returnScheduledAt = new Date(`${newReturnDate}T${newReturnTime}`).toISOString();
+      }
+
+      const response = await fetch('/api/admin/rides', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customer_name: newCustomerName.trim(),
+          customer_phone: newCustomerPhone.trim(),
+          ride_type: newRideType,
+          pickup_address: newPickupAddress.trim(),
+          drop_address: newDropAddress.trim(),
+          scheduled_at: scheduledAt,
+          return_scheduled_at: returnScheduledAt,
+          car_type: newCarType,
+          distance_km: newDistanceKm,
+          total_fare: newTotalFare,
+          payment_mode: newPaymentMode,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create manual booking.');
+      }
+
+      setShowAddBookingModal(false);
+      setNewCustomerName('');
+      setNewCustomerPhone('');
+      setNewRideType('one_way');
+      setNewPickupAddress('');
+      setNewDropAddress('');
+      setNewScheduledDate('');
+      setNewScheduledTime('');
+      setNewReturnDate('');
+      setNewReturnTime('');
+      setNewCarType('sedan');
+      setNewDistanceKm('');
+      setNewTotalFare('');
+      setNewPaymentMode('cash');
+
+      fetchData();
+      alert('Manual booking created successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Error occurred creating booking.');
+    } finally {
+      setAssigning(false);
     }
   };
 
@@ -182,16 +358,76 @@ export default function AdminBookings() {
   return (
     <div style={{ padding: '3rem 0', backgroundColor: 'var(--bg-color)', minHeight: '80vh' }}>
       <div className="container">
-        
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>Manual Dispatch Board</h1>
             <p>Bookings dispatch desk – manually assign cars & drivers to customer requests</p>
           </div>
-          <button onClick={fetchData} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <RefreshCw size={16} /> Refresh Bookings
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button onClick={() => fetchData()} className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--border-color)' }}>
+              <RefreshCw size={14} /> Refresh
+            </button>
+            <button onClick={() => setShowAddBookingModal(true)} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Plus size={14} /> Create Booking
+            </button>
+          </div>
+        </div>
+
+        {/* Date Filter Panel */}
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', backgroundColor: 'var(--card-color)' }}>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--secondary)' }}>
+              Select Month
+            </label>
+            <select
+              className="form-control"
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-color)', fontSize: '0.9rem' }}
+            >
+              <option value="all">All Months (Aug 2026 onwards)</option>
+              {availableMonths.map(ym => (
+                <option key={ym} value={ym}>{formatYearMonth(ym)}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div style={{ flex: '1', minWidth: '150px' }}>
+            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--secondary)' }}>
+              Select Day
+            </label>
+            <select
+              className="form-control"
+              value={selectedDay}
+              onChange={(e) => {
+                setSelectedDay(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-color)', fontSize: '0.9rem' }}
+            >
+              <option value="all">All Days</option>
+              {Array.from({ length: 31 }, (_, i) => String(i + 1)).map(day => (
+                <option key={day} value={day}>{day}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => {
+              setSelectedMonth('2026-08');
+              setSelectedDay('all');
+              setCurrentPage(1);
+            }}
+            className="btn btn-ghost btn-sm"
+            style={{ border: '1px solid var(--border-color)', height: '40px', padding: '0 1rem', display: 'flex', alignItems: 'center' }}
+          >
+            Clear Filters
           </button>
         </div>
+
 
         {errorMsg && (
           <div className="alert alert-danger">
@@ -207,8 +443,13 @@ export default function AdminBookings() {
           <div className="card" style={{ textAlign: 'center', padding: '3.5rem' }}>
             <p>No taxi bookings placed yet.</p>
           </div>
+        ) : filteredBookings.length === 0 ? (
+          <div className="card" style={{ textAlign: 'center', padding: '3.5rem' }}>
+            <p>No taxi bookings match the selected date filters.</p>
+          </div>
         ) : (
-          <div className="table-wrapper">
+          <>
+            <div className="table-wrapper">
             <table className="table">
               <thead>
                 <tr>
@@ -221,7 +462,7 @@ export default function AdminBookings() {
                 </tr>
               </thead>
               <tbody>
-                {bookings.map(ride => (
+                {currentRecords.map(ride => (
                   <tr key={ride.id}>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--secondary)' }}>
@@ -307,7 +548,60 @@ export default function AdminBookings() {
               </tbody>
             </table>
           </div>
-        )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', padding: '1rem 0', borderTop: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '1rem' }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                Showing {indexOfFirstRecord + 1} to {Math.min(indexOfLastRecord, filteredBookings.length)} of {filteredBookings.length} records
+              </span>
+              <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={activePage === 1}
+                  className="btn btn-ghost btn-sm"
+                  style={{ border: '1px solid var(--border-color)', opacity: activePage === 1 ? 0.5 : 1, cursor: activePage === 1 ? 'not-allowed' : 'pointer', height: '36px', display: 'flex', alignItems: 'center' }}
+                >
+                  Previous
+                </button>
+                
+                {getPageNumbers(activePage, totalPages).map((pageNum, idx) => {
+                  if (pageNum === '...') {
+                    return <span key={`ellipsis-${idx}`} style={{ padding: '0 0.5rem', color: 'var(--text-muted)' }}>...</span>;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum as number)}
+                      className={`btn btn-sm ${activePage === pageNum ? 'btn-primary' : 'btn-ghost'}`}
+                      style={{ 
+                        minWidth: '36px', 
+                        height: '36px', 
+                        padding: '0', 
+                        border: activePage === pageNum ? 'none' : '1px solid var(--border-color)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={activePage === totalPages}
+                  className="btn btn-ghost btn-sm"
+                  style={{ border: '1px solid var(--border-color)', opacity: activePage === totalPages ? 0.5 : 1, cursor: activePage === totalPages ? 'not-allowed' : 'pointer', height: '36px', display: 'flex', alignItems: 'center' }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       </div>
 
@@ -411,6 +705,206 @@ export default function AdminBookings() {
                   disabled={assigning || getFilteredCars().length === 0 || drivers.length === 0}
                 >
                   {assigning ? 'Assigning...' : 'Confirm & Dispatch Ride'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Manual Booking Modal */}
+      {showAddBookingModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+            
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ color: 'var(--secondary)' }}>Create Manual Booking</h3>
+              <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Enter booking details received via Phone or WhatsApp</p>
+            </div>
+
+            <form onSubmit={handleCreateBookingSubmit}>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Passenger Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. Aswin Kumar"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Passenger Mobile</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. 9360161453"
+                    value={newCustomerPhone}
+                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Ride Type</label>
+                  <select
+                    className="form-control"
+                    value={newRideType}
+                    onChange={(e: any) => setNewRideType(e.target.value)}
+                    required
+                  >
+                    <option value="one_way">One Way</option>
+                    <option value="round_trip">Round Trip</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Vehicle Class</label>
+                  <select
+                    className="form-control"
+                    value={newCarType}
+                    onChange={(e: any) => setNewCarType(e.target.value)}
+                    required
+                  >
+                    <option value="sedan">Sedan (Comfort)</option>
+                    <option value="suv">SUV (Spacious)</option>
+                    <option value="innova">Innova (Premium)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Pickup Address</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Starting location"
+                  value={newPickupAddress}
+                  onChange={(e) => setNewPickupAddress(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Drop Address</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Destination location"
+                  value={newDropAddress}
+                  onChange={(e) => setNewDropAddress(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Pickup Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    min="2026-08-01"
+                    value={newScheduledDate}
+                    onChange={(e) => setNewScheduledDate(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Pickup Time</label>
+                  <input
+                    type="time"
+                    className="form-control"
+                    value={newScheduledTime}
+                    onChange={(e) => setNewScheduledTime(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {newRideType === 'round_trip' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Return Date</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      min="2026-08-01"
+                      value={newReturnDate}
+                      onChange={(e) => setNewReturnDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Return Time</label>
+                    <input
+                      type="time"
+                      className="form-control"
+                      value={newReturnTime}
+                      onChange={(e) => setNewReturnTime(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Distance (KM)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    placeholder="Estimated distance"
+                    value={newDistanceKm}
+                    onChange={(e) => setNewDistanceKm(e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Total Fare (₹)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    placeholder="e.g. 2400"
+                    value={newTotalFare}
+                    onChange={(e) => setNewTotalFare(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Payment Method</label>
+                <select
+                  className="form-control"
+                  value={newPaymentMode}
+                  onChange={(e: any) => setNewPaymentMode(e.target.value)}
+                  required
+                >
+                  <option value="cash">Cash</option>
+                  <option value="upi">UPI</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '2rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  style={{ flex: 1, border: '1px solid var(--border-color)' }}
+                  onClick={() => setShowAddBookingModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ flex: 2 }}
+                  disabled={assigning}
+                >
+                  {assigning ? 'Creating...' : 'Create Booking'}
                 </button>
               </div>
 

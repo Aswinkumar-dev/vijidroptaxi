@@ -141,6 +141,40 @@ export default function DriverDashboard() {
           </div>
         )}
 
+        {/* Permanent Review Link */}
+        {driver && !driver.is_not_linked && (
+          <div className="card" style={{ padding: '1.25rem', marginBottom: '2rem', backgroundColor: '#FAF5FF', border: '1px solid rgba(139, 92, 246, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--secondary)', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                ⭐ Permanent Customer Review Link
+              </h4>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Passengers can scan a QR code of this link inside your vehicle to submit feedback.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  const link = `${window.location.origin}/rate/driver/${driver.id}`;
+                  navigator.clipboard.writeText(link);
+                  alert('Review link copied to clipboard!');
+                }}
+                className="btn btn-primary btn-sm"
+              >
+                Copy Link
+              </button>
+              <a
+                href={`/rate/driver/${driver.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline btn-sm"
+              >
+                Open Review Page
+              </a>
+            </div>
+          </div>
+        )}
+
         {driver && driver.is_not_linked && (
           <div className="alert alert-info" style={{
             backgroundColor: '#EFF6FF',

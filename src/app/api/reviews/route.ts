@@ -3,10 +3,14 @@ import { createAdminClient } from '@/lib/supabaseServer';
 
 export async function POST(req: NextRequest) {
   try {
-    const { ride_id, rating, comment } = await req.json();
+    const { ride_id, driver_id, rating, comment } = await req.json();
 
-    if (!ride_id || !rating) {
-      return NextResponse.json({ error: 'ride_id and rating are required' }, { status: 400 });
+    if (!rating) {
+      return NextResponse.json({ error: 'rating is required' }, { status: 400 });
+    }
+
+    if (!ride_id && !driver_id) {
+      return NextResponse.json({ error: 'Either ride_id or driver_id is required' }, { status: 400 });
     }
 
     const ratingVal = parseInt(rating);
@@ -15,28 +19,33 @@ export async function POST(req: NextRequest) {
     }
 
     const adminSupabase = createAdminClient();
+    let finalDriverId = driver_id;
 
-    // Check if the ride exists and get its driver_id
-    const { data: ride, error: rideError } = await adminSupabase
-      .from('rides')
-      .select('driver_id, status')
-      .eq('id', ride_id)
-      .single();
+    if (ride_id) {
+      // Check if the ride exists and get its driver_id
+      const { data: ride, error: rideError } = await adminSupabase
+        .from('rides')
+        .select('driver_id, status')
+        .eq('id', ride_id)
+        .single();
 
-    if (rideError || !ride) {
-      return NextResponse.json({ error: 'Ride booking not found' }, { status: 404 });
-    }
+      if (rideError || !ride) {
+        return NextResponse.json({ error: 'Ride booking not found' }, { status: 404 });
+      }
 
-    if (!ride.driver_id) {
-      return NextResponse.json({ error: 'No driver is assigned to this ride' }, { status: 400 });
+      if (!ride.driver_id) {
+        return NextResponse.json({ error: 'No driver is assigned to this ride' }, { status: 400 });
+      }
+      
+      finalDriverId = ride.driver_id;
     }
 
     // Insert review into database
     const { data: review, error: reviewError } = await adminSupabase
       .from('reviews')
       .insert({
-        ride_id,
-        driver_id: ride.driver_id,
+        ride_id: ride_id || null,
+        driver_id: finalDriverId,
         rating: ratingVal,
         comment: comment?.trim() || null,
       })

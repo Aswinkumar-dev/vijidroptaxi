@@ -807,8 +807,20 @@ function BookFormContent() {
       }
     }
 
-    if (!pickupAddress.trim() || !dropAddress.trim() || !scheduledDate || !scheduledTime) {
-      setErrorMsg('Please fill in all details.');
+    if (!pickupAddress.trim()) {
+      setErrorMsg('Please enter your pickup address.');
+      return;
+    }
+    if (!dropAddress.trim()) {
+      setErrorMsg('Please enter your drop address.');
+      return;
+    }
+    if (!scheduledDate) {
+      setErrorMsg('Please select your pickup date.');
+      return;
+    }
+    if (!scheduledTime) {
+      setErrorMsg('Please select your pickup time.');
       return;
     }
 
@@ -919,19 +931,22 @@ function BookFormContent() {
 
           {errorMsg && (
             <div className="alert alert-danger" style={{
-              backgroundColor: '#FEF2F2',
-              border: '1px solid #FCA5A5',
-              color: '#991B1B',
-              padding: '0.75rem 1rem',
-              borderRadius: 'var(--radius-sm)',
+              backgroundColor: 'rgba(255, 122, 0, 0.05)',
+              border: '1px solid rgba(255, 122, 0, 0.15)',
+              borderLeft: '4px solid var(--primary)',
+              color: 'var(--secondary)',
+              padding: '1rem',
+              borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
               fontSize: '0.9rem',
-              fontWeight: 500,
+              fontWeight: 600,
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem'
+              gap: '0.75rem',
+              boxShadow: '0 4px 12px rgba(255, 122, 0, 0.05)',
             }}>
-              ⚠️ {errorMsg}
+              <span style={{ fontSize: '1.1rem' }}>⚠️</span>
+              <div>{errorMsg}</div>
             </div>
           )}
 

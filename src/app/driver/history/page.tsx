@@ -13,6 +13,101 @@ export default function DriverHistory() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Date Filtering State (starts from August 2026)
+  const [selectedMonth, setSelectedMonth] = useState<string>('2026-08');
+  const [selectedDay, setSelectedDay] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Dynamically compute available months starting from August 2026
+  const availableMonths = React.useMemo(() => {
+    const monthsSet = new Set<string>();
+    
+    // Always include August 2026
+    monthsSet.add('2026-08');
+
+    rides.forEach(r => {
+      const dateStr = r.completed_at || r.scheduled_at;
+      if (dateStr) {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          if (ym >= '2026-08') {
+            monthsSet.add(ym);
+          }
+        }
+      }
+    });
+    return Array.from(monthsSet).sort();
+  }, [rides]);
+
+  const formatYearMonth = (ym: string) => {
+    const [year, month] = ym.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  };
+
+  // Filter rides based on selectedMonth and selectedDay (August 2026 onwards)
+  const filteredRides = React.useMemo(() => {
+    return rides.filter(ride => {
+      const dateStr = ride.completed_at || ride.scheduled_at;
+      if (!dateStr) return false;
+      const rideDate = new Date(dateStr);
+      if (isNaN(rideDate.getTime())) return false;
+      
+      const year = rideDate.getFullYear();
+      const month = String(rideDate.getMonth() + 1).padStart(2, '0');
+      const ym = `${year}-${month}`;
+      
+      // Enforce the starting point constraint: August 2026 or later
+      if (ym < '2026-08') return false;
+
+      // Month filter
+      if (selectedMonth !== 'all' && ym !== selectedMonth) {
+        return false;
+      }
+      
+      // Day filter
+      if (selectedDay !== 'all') {
+        const day = String(rideDate.getDate());
+        if (day !== selectedDay) return false;
+      }
+      
+      return true;
+    });
+  }, [rides, selectedMonth, selectedDay]);
+
+  // Paginated rides
+  const recordsPerPage = 10;
+  const totalPages = Math.ceil(filteredRides.length / recordsPerPage);
+  const activePage = Math.min(currentPage, totalPages || 1);
+  const indexOfLastRecord = activePage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredRides.slice(indexOfFirstRecord, indexOfLastRecord);
+
+  // Helper for generating page numbers with ellipses
+  const getPageNumbers = (current: number, total: number) => {
+    const pages: (number | string)[] = [];
+    if (total <= 5) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (current > 3) pages.push('...');
+      
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+      
+      for (let i = start; i <= end; i++) {
+        if (pages[pages.length - 1] !== i) {
+          pages.push(i);
+        }
+      }
+      
+      if (current < total - 2) pages.push('...');
+      if (total > 1 && pages[pages.length - 1] !== total) pages.push(total);
+    }
+    return pages;
+  };
+
   const fetchHistory = async () => {
     try {
       setLoading(true);
@@ -127,6 +222,61 @@ export default function DriverHistory() {
 
         </div>
 
+        {/* Date Filter Panel */}
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '2.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-end', backgroundColor: 'var(--card-color)' }}>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--secondary)' }}>
+              Select Month
+            </label>
+            <select
+              className="form-control"
+              value={selectedMonth}
+              onChange={(e) => {
+                setSelectedMonth(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-color)', fontSize: '0.9rem' }}
+            >
+              <option value="all">All Months (Aug 2026 onwards)</option>
+              {availableMonths.map(ym => (
+                <option key={ym} value={ym}>{formatYearMonth(ym)}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div style={{ flex: '1', minWidth: '150px' }}>
+            <label className="form-label" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem', color: 'var(--secondary)' }}>
+              Select Day
+            </label>
+            <select
+              className="form-control"
+              value={selectedDay}
+              onChange={(e) => {
+                setSelectedDay(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-color)', fontSize: '0.9rem' }}
+            >
+              <option value="all">All Days</option>
+              {Array.from({ length: 31 }, (_, i) => String(i + 1)).map(day => (
+                <option key={day} value={day}>{day}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => {
+              setSelectedMonth('2026-08');
+              setSelectedDay('all');
+              setCurrentPage(1);
+            }}
+            className="btn btn-ghost btn-sm"
+            style={{ border: '1px solid var(--border-color)', height: '40px', padding: '0 1rem', display: 'flex', alignItems: 'center' }}
+          >
+            Clear Filters
+          </button>
+        </div>
+
         {/* List of rides completed */}
         <h2 style={{ fontSize: '1.25rem', color: 'var(--secondary)', marginBottom: '1rem' }}>Completed Jobs Log</h2>
         
@@ -138,24 +288,82 @@ export default function DriverHistory() {
           <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
             <p>You have not completed any rides yet.</p>
           </div>
+        ) : filteredRides.length === 0 ? (
+          <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
+            <p>No completed rides found for the selected date filters.</p>
+          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {rides.map((ride) => (
-              <div key={ride.id} className="card" style={{ padding: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
-                  <span>Completed: {ride.completed_at ? new Date(ride.completed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
-                  <span style={{ color: 'var(--success)', fontWeight: 700 }}>₹{ride.total_fare} ({ride.payment_mode || 'cash'})</span>
-                </div>
+          <>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {currentRecords.map((ride) => (
+                <div key={ride.id} className="card" style={{ padding: '1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                    <span>Completed: {ride.completed_at ? new Date(ride.completed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
+                    <span style={{ color: 'var(--success)', fontWeight: 700 }}>₹{ride.total_fare} ({ride.payment_mode || 'cash'})</span>
+                  </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.9rem' }}>
-                  <div><strong>Customer:</strong> {ride.customer_name || ride.customer?.full_name || 'Guest Passenger'}</div>
-                  <div><strong>Pickup:</strong> {ride.pickup_address}</div>
-                  <div><strong>Drop:</strong> {ride.drop_address}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Trip Distance: {ride.distance_km} KM | Car Type: {ride.car_type.toUpperCase()}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.9rem' }}>
+                    <div><strong>Customer:</strong> {ride.customer_name || ride.customer?.full_name || 'Guest Passenger'}</div>
+                    <div><strong>Pickup:</strong> {ride.pickup_address}</div>
+                    <div><strong>Drop:</strong> {ride.drop_address}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Trip Distance: {ride.distance_km} KM | Car Type: {ride.car_type.toUpperCase()}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', padding: '1rem 0', borderTop: '1px solid var(--border-color)', flexWrap: 'wrap', gap: '1rem' }}>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  Showing {indexOfFirstRecord + 1} to {Math.min(indexOfLastRecord, filteredRides.length)} of {filteredRides.length} records
+                </span>
+                <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={activePage === 1}
+                    className="btn btn-ghost btn-sm"
+                    style={{ border: '1px solid var(--border-color)', opacity: activePage === 1 ? 0.5 : 1, cursor: activePage === 1 ? 'not-allowed' : 'pointer', height: '36px', display: 'flex', alignItems: 'center' }}
+                  >
+                    Previous
+                  </button>
+                  
+                  {getPageNumbers(activePage, totalPages).map((pageNum, idx) => {
+                    if (pageNum === '...') {
+                      return <span key={`ellipsis-${idx}`} style={{ padding: '0 0.5rem', color: 'var(--text-muted)' }}>...</span>;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum as number)}
+                        className={`btn btn-sm ${activePage === pageNum ? 'btn-primary' : 'btn-ghost'}`}
+                        style={{ 
+                          minWidth: '36px', 
+                          height: '36px', 
+                          padding: '0', 
+                          border: activePage === pageNum ? 'none' : '1px solid var(--border-color)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={activePage === totalPages}
+                    className="btn btn-ghost btn-sm"
+                    style={{ border: '1px solid var(--border-color)', opacity: activePage === totalPages ? 0.5 : 1, cursor: activePage === totalPages ? 'not-allowed' : 'pointer', height: '36px', display: 'flex', alignItems: 'center' }}
+                  >
+                    Next
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
 
       </div>

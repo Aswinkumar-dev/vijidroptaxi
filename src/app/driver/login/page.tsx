@@ -19,6 +19,23 @@ export default function DriverLogin() {
     setLoading(true);
     setErrorMsg('');
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setErrorMsg('Please enter a valid email address.');
+      setLoading(false);
+      return;
+    }
+
+    const hasMinLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasMinLength || !hasUppercase || !hasSpecialChar) {
+      setErrorMsg('Password must be at least 8 characters, contain at least one uppercase letter, and at least one special character.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data: authData, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -115,6 +132,9 @@ export default function DriverLogin() {
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem', lineHeight: 1.4 }}>
+              💡 Password must be at least 8 characters long, containing 1 uppercase letter and 1 special character.
+            </p>
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={loading}>

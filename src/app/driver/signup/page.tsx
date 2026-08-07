@@ -27,11 +27,38 @@ export default function DriverSignup() {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!fullName.trim()) { setErrorMsg('Please enter your full name.'); return; }
-    if (!phone.trim()) { setErrorMsg('Please enter your mobile number.'); return; }
-    if (!email.trim()) { setErrorMsg('Please enter your email address.'); return; }
-    if (!dob) { setErrorMsg('Please enter your date of birth.'); return; }
-    if (!password || password.length < 6) { setErrorMsg('Password must be at least 6 characters.'); return; }
+    if (!fullName.trim() || fullName.trim().length < 3) {
+      setErrorMsg('Full name must be at least 3 characters.');
+      return;
+    }
+
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      setErrorMsg('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setErrorMsg('Please enter a valid email address.');
+      return;
+    }
+
+    if (!dob) {
+      setErrorMsg('Please enter your date of birth.');
+      return;
+    }
+
+    // Password validation: min 8 chars, 1 uppercase, 1 special char
+    const hasMinLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasMinLength || !hasUppercase || !hasSpecialChar) {
+      setErrorMsg('Password must be at least 8 characters long, contain at least one uppercase letter, and at least one special character.');
+      return;
+    }
+
     if (!aadharFile) { setErrorMsg('Please upload your Aadhar card.'); return; }
     if (!licenseFile) { setErrorMsg('Please upload your Driving License.'); return; }
 
@@ -250,7 +277,7 @@ export default function DriverSignup() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 className="form-control"
-                placeholder="Create a password (min. 6 characters)"
+                placeholder="Create a password (min. 8 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={{ width: '100%', paddingRight: '2.75rem', boxSizing: 'border-box' }}
@@ -263,6 +290,19 @@ export default function DriverSignup() {
               }}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
+            </div>
+            
+            {/* Dynamic Password Strength Checklist */}
+            <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', backgroundColor: 'rgba(30,41,59,0.02)', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+              <div style={{ color: password.length >= 8 ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem', transition: 'color 0.2s' }}>
+                <span style={{ fontWeight: 700 }}>{password.length >= 8 ? '✓' : '•'}</span> Minimum 8 characters
+              </div>
+              <div style={{ color: /[A-Z]/.test(password) ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem', transition: 'color 0.2s' }}>
+                <span style={{ fontWeight: 700 }}>{/[A-Z]/.test(password) ? '✓' : '•'}</span> At least one uppercase letter (A-Z)
+              </div>
+              <div style={{ color: /[^A-Za-z0-9]/.test(password) ? 'var(--success)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.35rem', transition: 'color 0.2s' }}>
+                <span style={{ fontWeight: 700 }}>{/[^A-Za-z0-9]/.test(password) ? '✓' : '•'}</span> At least one special character (e.g. @, #, $, !)
+              </div>
             </div>
           </div>
 

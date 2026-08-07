@@ -47,45 +47,21 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Query database statistics (using client-side queries)
-      const { count: totalRidesCount } = await supabase.from('rides').select('*', { count: 'exact', head: true });
-      const { count: pendingCount } = await supabase.from('rides').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-      const { count: activeCount } = await supabase.from('rides').select('*', { count: 'exact', head: true }).in('status', ['confirmed', 'driver_arrived', 'ongoing']);
-      const { count: completedCount } = await supabase.from('rides').select('*', { count: 'exact', head: true }).eq('status', 'completed');
-      
-      const { count: driversCount } = await supabase.from('drivers').select('*', { count: 'exact', head: true }).eq('is_active', true);
-      const { count: carsCount } = await supabase.from('cars').select('*', { count: 'exact', head: true }).eq('is_active', true);
-
-      // Fetch driver ratings avg
-      const { data: driverRatings } = await supabase.from('drivers').select('rating_avg');
-      let ratingAvg = 5.0;
-      if (driverRatings && driverRatings.length > 0) {
-        const sum = driverRatings.reduce((acc, curr) => acc + Number(curr.rating_avg || 0), 0);
-        ratingAvg = parseFloat((sum / driverRatings.length).toFixed(1));
+      // Fetch stats from server endpoint (bypassing client-side RLS)
+      const statsRes = await fetch('/api/admin/stats');
+      const statsData = await statsRes.json();
+      if (!statsRes.ok) {
+        throw new Error(statsData.error || 'Failed to fetch statistics.');
       }
+      setStats(statsData);
 
-      setStats({
-        totalRides: totalRidesCount || 0,
-        pendingRides: pendingCount || 0,
-        activeRides: activeCount || 0,
-        completedRides: completedCount || 0,
-        totalDrivers: driversCount || 0,
-        totalCars: carsCount || 0,
-        avgRating: ratingAvg
-      });
-
-      // Fetch recent 5 rides
-      const { data: recent, error: recentErr } = await supabase
-        .from('rides')
-        .select(`
-          *,
-          customer:profiles!rides_customer_id_fkey(id, full_name, phone)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (recentErr) throw recentErr;
-      setRecentRides(recent || []);
+      // Fetch recent 5 rides from server endpoint
+      const recentRes = await fetch('/api/admin/rides?limit=5');
+      const recentData = await recentRes.json();
+      if (!recentRes.ok) {
+        throw new Error(recentData.error || 'Failed to fetch recent rides.');
+      }
+      setRecentRides(recentData || []);
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred.');
     } finally {
