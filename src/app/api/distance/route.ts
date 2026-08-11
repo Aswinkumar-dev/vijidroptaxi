@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const apiKey = process.env.GOOGLE_PLACES_API_KEY;
     const isCoordsOrigin = originPlaceId?.startsWith('coords:');
     const isCoordsDest = destinationPlaceId?.startsWith('coords:');
-    const useOSRM = !apiKey || isCoordsOrigin || isCoordsDest;
+    const useOSRM = !apiKey;
 
     if (useOSRM) {
       // Resolve coordinates for origin
@@ -128,9 +128,14 @@ export async function GET(request: Request) {
 
     const googleUrl = new URL('https://maps.googleapis.com/maps/api/distancematrix/json');
     
-    // Prefer place ID as it is more precise for Google, fallback to text description
-    const originParam = originPlaceId ? `place_id:${originPlaceId}` : origin!;
-    const destParam = destinationPlaceId ? `place_id:${destinationPlaceId}` : destination!;
+    // Prefer coordinates / place ID as it is more precise for Google, fallback to text description
+    const originParam = isCoordsOrigin 
+      ? originPlaceId!.substring(7) 
+      : (originPlaceId ? `place_id:${originPlaceId}` : origin!);
+      
+    const destParam = isCoordsDest 
+      ? destinationPlaceId!.substring(7) 
+      : (destinationPlaceId ? `place_id:${destinationPlaceId}` : destination!);
 
     googleUrl.searchParams.set('origins', originParam);
     googleUrl.searchParams.set('destinations', destParam);

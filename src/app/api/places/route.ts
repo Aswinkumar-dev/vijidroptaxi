@@ -18,8 +18,6 @@ export async function GET(request: Request) {
         googleUrl.searchParams.set('input', input);
         googleUrl.searchParams.set('key', apiKey || '');
         googleUrl.searchParams.set('components', 'country:in');
-        googleUrl.searchParams.set('location', '10.7905,78.7047');
-        googleUrl.searchParams.set('radius', '300000');
         googleUrl.searchParams.set('language', 'en');
 
         const response = await fetch(googleUrl.toString());
