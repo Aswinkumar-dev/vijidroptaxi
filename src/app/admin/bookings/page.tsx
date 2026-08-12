@@ -273,7 +273,6 @@ export default function AdminBookings() {
           pickup_address: newPickupAddress.trim(),
           drop_address: newDropAddress.trim(),
           scheduled_at: scheduledAt,
-          return_scheduled_at: returnScheduledAt,
           car_type: newCarType,
           distance_km: newDistanceKm,
           total_fare: newTotalFare,
@@ -672,7 +671,7 @@ export default function AdminBookings() {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="e.g. Aswin Kumar"
+                    placeholder="John Doe"
                     value={newCustomerName}
                     onChange={(e) => setNewCustomerName(e.target.value)}
                   />
@@ -682,7 +681,7 @@ export default function AdminBookings() {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="e.g. 9360161453"
+                    placeholder="99999 99999"
                     value={newCustomerPhone}
                     onChange={(e) => setNewCustomerPhone(e.target.value)}
                     required
