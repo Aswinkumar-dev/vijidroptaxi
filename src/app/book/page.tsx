@@ -692,36 +692,26 @@ function BookFormContent() {
     return () => clearTimeout(delayDebounce);
   }, [dropAddress]);
 
-  // Dynamic Google Distance Matrix calculation
+  // Dynamic Google Distance Matrix calculation — only fires when both locations are fully selected
   useEffect(() => {
     const calculateDistance = async () => {
-      if (!pickupAddress.trim() || !dropAddress.trim() || pickupAddress.length < 2 || dropAddress.length < 2) {
-        return;
-      }
+      // Only calculate when both locations are properly selected from the dropdown
+      if (!pickupPlaceId || !dropPlaceId) return;
 
       setIsCalculatingDistance(true);
       try {
         const queryParams = new URLSearchParams();
-        if (pickupPlaceId) queryParams.set('origin_place_id', pickupPlaceId);
-        else queryParams.set('origin', pickupAddress);
-
-        if (dropPlaceId) queryParams.set('destination_place_id', dropPlaceId);
-        else queryParams.set('destination', dropAddress);
+        queryParams.set('origin_place_id', pickupPlaceId);
+        queryParams.set('destination_place_id', dropPlaceId);
 
         const res = await fetch(`/api/distance?${queryParams.toString()}`);
-        if (!res.ok) {
-          throw new Error('Distance API request failed');
-        }
         const data = await res.json();
         if (data.distanceKm !== undefined) {
           setDistanceKm(data.distanceKm);
           setRouteDuration(data.durationText || '');
         }
       } catch (err) {
-        console.warn('Failed to calculate driving distance, falling back to default:', err);
-        // Fallback: use minimum thresholds or reasonable defaults
-        setDistanceKm(rideType === 'one_way' ? 130 : 125);
-        setRouteDuration('Approx. 2-3 hours');
+        console.warn('Distance calculation failed:', err);
       } finally {
         setIsCalculatingDistance(false);
       }
@@ -729,10 +719,10 @@ function BookFormContent() {
 
     const delayDebounce = setTimeout(() => {
       calculateDistance();
-    }, 600); // debounce slightly to avoid API spam while typing manually
+    }, 400);
 
     return () => clearTimeout(delayDebounce);
-  }, [pickupAddress, dropAddress, pickupPlaceId, dropPlaceId, rideType]);
+  }, [pickupPlaceId, dropPlaceId, rideType]);
 
   const checkUserProfile = async (userId: string) => {
     const { data: userProfile } = await supabase
@@ -1127,10 +1117,7 @@ function BookFormContent() {
                         className="city-suggestion-item"
                       >
                         <MapPin size={16} style={{ color: 'var(--text-muted)', marginTop: '2px', flexShrink: 0 }} />
-                        <div>
-                          <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.9rem' }}>{place.main_text}</div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1px' }}>{place.secondary_text}</div>
-                        </div>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>{place.description}</div>
                       </div>
                     ))}
                     <div style={{
@@ -1203,10 +1190,7 @@ function BookFormContent() {
                         className="city-suggestion-item"
                       >
                         <MapPin size={16} style={{ color: 'var(--text-muted)', marginTop: '2px', flexShrink: 0 }} />
-                        <div>
-                          <div style={{ fontWeight: 600, color: 'var(--secondary)', fontSize: '0.9rem' }}>{place.main_text}</div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '1px' }}>{place.secondary_text}</div>
-                        </div>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-color)' }}>{place.description}</div>
                       </div>
                     ))}
                     <div style={{
