@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -22,18 +22,16 @@ export default function AdminDashboard() {
   const [recentRides, setRecentRides] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
+  const channelRef = useRef<any>(null);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setErrorMsg('');
 
       // Authenticate
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/admin/login');
-        return;
-      }
+      if (!user) { router.push('/admin/login'); return; }
 
       // Verify admin
       const { data: profile } = await supabase
@@ -41,37 +39,41 @@ export default function AdminDashboard() {
         .select('role')
         .eq('id', user.id)
         .single();
-
-      if (!profile || profile.role !== 'admin') {
-        router.push('/');
-        return;
-      }
+      if (!profile || profile.role !== 'admin') { router.push('/'); return; }
 
       // Fetch stats from server endpoint (bypassing client-side RLS)
       const statsRes = await fetch('/api/admin/stats');
       const statsData = await statsRes.json();
-      if (!statsRes.ok) {
-        throw new Error(statsData.error || 'Failed to fetch statistics.');
-      }
+      if (!statsRes.ok) throw new Error(statsData.error || 'Failed to fetch statistics.');
       setStats(statsData);
 
       // Fetch recent 5 rides from server endpoint
       const recentRes = await fetch('/api/admin/rides?limit=5');
       const recentData = await recentRes.json();
-      if (!recentRes.ok) {
-        throw new Error(recentData.error || 'Failed to fetch recent rides.');
-      }
+      if (!recentRes.ok) throw new Error(recentData.error || 'Failed to fetch recent rides.');
       setRecentRides(recentData || []);
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+
+    // Real-time subscription — auto-refresh when any ride is inserted or updated
+    channelRef.current = supabase
+      .channel('admin-rides-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => {
+        fetchStats(true); // silent refresh — no loading spinner
+      })
+      .subscribe();
+
+    return () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+    };
+  }, [fetchStats]);
 
   return (
     <div style={{ padding: '3rem 0', backgroundColor: 'var(--bg-color)', minHeight: '80vh' }}>
@@ -80,9 +82,9 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>Admin Dispatch Console</h1>
-            <p>Monitor your 2-3 vehicles and coordinate passenger dispatches</p>
+            <p>Monitor your vehicles and coordinate passenger dispatches</p>
           </div>
-          <button onClick={fetchStats} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <button onClick={() => fetchStats()} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <RefreshCw size={16} /> Refresh Console
           </button>
         </div>

@@ -236,7 +236,7 @@ export default function DriverHistory() {
                 <div key={ride.id} className="card" style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', fontSize: '0.85rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
                     <span>Completed: {ride.completed_at ? new Date(ride.completed_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
-                    <span style={{ color: 'var(--success)', fontWeight: 700 }}>₹{ride.total_fare} ({ride.payment_mode || 'cash'})</span>
+                    <span style={{ color: 'var(--success)', fontWeight: 700 }}>₹{ride.total_fare}</span>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.9rem' }}>

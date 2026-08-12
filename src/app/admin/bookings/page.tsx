@@ -458,9 +458,7 @@ export default function AdminBookings() {
                     </td>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--secondary)' }}>₹{ride.total_fare}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', textTransform: 'uppercase' }}>
-                        Mode: {ride.payment_mode || 'cash'}
-                      </div>
+
                       <div style={{ fontSize: '0.7rem', fontWeight: 700, color: ride.payment_status === 'paid' ? 'var(--success)' : 'var(--accent)', marginTop: '0.25rem' }}>
                         ● {ride.payment_status?.toUpperCase()}
                       </div>
