@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
         distance_km: Number(distance_km) || 0,
         total_fare: Number(total_fare),
         payment_mode: payment_mode || 'cash',
-        status: 'pending',
-        payment_status: 'pending',
+        status: 'completed',
+        payment_status: 'paid',
       })
       .select()
       .single();
