@@ -64,6 +64,16 @@ export async function POST(
       return NextResponse.json({ error: 'Ride is not in ongoing state' }, { status: 400 });
     }
 
+    let paymentModeSelected = ride.payment_mode || 'cash';
+    try {
+      const body = await req.json();
+      if (body?.payment_mode) {
+        paymentModeSelected = body.payment_mode;
+      }
+    } catch (e) {
+      // json body is optional
+    }
+
     const totalFare = ride.total_fare || 0;
 
     // Update ride to completed
@@ -73,6 +83,7 @@ export async function POST(
         status: 'completed',
         completed_at: new Date().toISOString(),
         payment_status: 'paid',
+        payment_mode: paymentModeSelected,
         updated_at: new Date().toISOString(),
       })
       .eq('id', rideId)
@@ -90,7 +101,7 @@ export async function POST(
       .insert({
         ride_id: rideId,
         amount: totalFare,
-        mode: ride.payment_mode || 'cash',
+        mode: paymentModeSelected,
         status: 'paid',
         collected_by: driver.id,
         collected_at: new Date().toISOString(),

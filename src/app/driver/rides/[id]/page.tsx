@@ -18,6 +18,8 @@ export default function DriverRideControl({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMode, setSelectedPaymentMode] = useState<'cash' | 'upi'>('cash');
   
   const fetchRideDetails = async () => {
     try {
@@ -116,15 +118,17 @@ export default function DriverRideControl({ params }: PageProps) {
   };
 
   // Transition 3: Complete Ride
-  const handleCompleteRide = async () => {
-    if (!confirm('Are you sure you want to complete this ride and collect payment?')) return;
-    
+  const handleCompleteRide = async (paymentMode: 'cash' | 'upi') => {
     setSubmitting(true);
     setErrorMsg('');
 
     try {
       const response = await fetch(`/api/driver/rides/${rideId}/complete`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ payment_mode: paymentMode }),
       });
       const data = await response.json();
 
@@ -133,6 +137,7 @@ export default function DriverRideControl({ params }: PageProps) {
       }
 
       fetchRideDetails();
+      setShowPaymentModal(false);
       alert('Ride completed and payment logged successfully!');
     } catch (err: any) {
       setErrorMsg(err.message || 'Error completing ride.');
@@ -236,7 +241,7 @@ export default function DriverRideControl({ params }: PageProps) {
                 🚕 Ride is active. Drop the passenger at their destination.
               </div>
               <button
-                onClick={handleCompleteRide}
+                onClick={() => setShowPaymentModal(true)}
                 className="btn btn-success btn-lg"
                 style={{ width: '100%', backgroundColor: 'var(--success)', color: 'white', padding: '1.25rem' }}
                 disabled={submitting}
@@ -369,6 +374,92 @@ export default function DriverRideControl({ params }: PageProps) {
         </div>
 
       </div>
+
+      {showPaymentModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999,
+          padding: '1.5rem'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: 'var(--radius-md)',
+            maxWidth: '400px',
+            width: '100%',
+            boxShadow: 'var(--shadow-lg)'
+          }}>
+            <h3 style={{ color: 'var(--secondary)', marginBottom: '1rem', textAlign: 'center' }}>Select Payment Method</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem', textAlign: 'center' }}>
+              Select how the passenger paid for this ride:
+            </p>
+            
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedPaymentMode('cash')}
+                style={{
+                  flex: 1,
+                  padding: '1rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: selectedPaymentMode === 'cash' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                  backgroundColor: selectedPaymentMode === 'cash' ? 'rgba(249, 115, 22, 0.05)' : 'white',
+                  color: 'var(--secondary)',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                💵 Cash
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPaymentMode('upi')}
+                style={{
+                  flex: 1,
+                  padding: '1rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: selectedPaymentMode === 'upi' ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                  backgroundColor: selectedPaymentMode === 'upi' ? 'rgba(249, 115, 22, 0.05)' : 'white',
+                  color: 'var(--secondary)',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                📱 UPI
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ flex: 1, border: '1px solid var(--border-color)' }}
+                onClick={() => setShowPaymentModal(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-success"
+                style={{ flex: 2, backgroundColor: 'var(--success)', color: 'white' }}
+                onClick={() => handleCompleteRide(selectedPaymentMode)}
+                disabled={submitting}
+              >
+                {submitting ? 'Completing...' : 'Confirm & Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
