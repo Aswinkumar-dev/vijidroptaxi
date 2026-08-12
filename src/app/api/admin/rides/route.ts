@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
         total_fare: Number(total_fare),
         payment_mode: payment_mode || 'cash',
         status: 'pending',
-        payment_status: 'unpaid',
+        payment_status: 'pending',
       })
       .select()
       .single();
