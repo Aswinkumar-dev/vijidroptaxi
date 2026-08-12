@@ -90,9 +90,27 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
-  // Split selected valueDate & valueTime into local state for temporary changes
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-indexed
+  // Get robust initial year/month respecting minDate
+  const getInitialYearMonth = () => {
+    let year = new Date().getFullYear();
+    let month = new Date().getMonth();
+    
+    if (minDate) {
+      const minD = new Date(minDate);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      minD.setHours(0,0,0,0);
+      if (today < minD) {
+        year = minD.getFullYear();
+        month = minD.getMonth();
+      }
+    }
+    return { year, month };
+  };
+
+  const initial = getInitialYearMonth();
+  const [currentYear, setCurrentYear] = useState(initial.year);
+  const [currentMonth, setCurrentMonth] = useState(initial.month); // 0-indexed
 
   // For time
   const [selectedHour, setSelectedHour] = useState('12');
@@ -107,6 +125,11 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
         setCurrentYear(parseInt(parts[0], 10));
         setCurrentMonth(parseInt(parts[1], 10) - 1);
       }
+    } else if (minDate) {
+      // If no value, ensure view starts at minDate
+      const minD = new Date(minDate);
+      setCurrentYear(minD.getFullYear());
+      setCurrentMonth(minD.getMonth());
     }
     if (valueTime) {
       const [h, m] = valueTime.split(':');
@@ -118,7 +141,7 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
     if (isOpen) {
       setClockMode('hour');
     }
-  }, [valueDate, valueTime, isOpen]);
+  }, [valueDate, valueTime, isOpen, minDate]);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -129,7 +152,36 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
 
+  // Enforce minDate checks
+  const isDateDisabled = (dayNum: number | null) => {
+    if (!dayNum) return true;
+    if (!minDate) return false;
+    
+    const thisDate = new Date(currentYear, currentMonth, dayNum);
+    const minD = new Date(minDate);
+    thisDate.setHours(0,0,0,0);
+    minD.setHours(0,0,0,0);
+    
+    return thisDate < minD;
+  };
+
+  const canGoPrevMonth = () => {
+    if (!minDate) return true;
+    const minD = new Date(minDate);
+    const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
+    
+    const minYear = minD.getFullYear();
+    const minMonth = minD.getMonth();
+    const prevYear = prevMonthDate.getFullYear();
+    const prevMonth = prevMonthDate.getMonth();
+    
+    if (prevYear < minYear) return false;
+    if (prevYear === minYear && prevMonth < minMonth) return false;
+    return true;
+  };
+
   const handlePrevMonth = () => {
+    if (!canGoPrevMonth()) return;
     if (currentMonth === 0) {
       setCurrentMonth(11);
       setCurrentYear(prev => prev - 1);
@@ -148,6 +200,7 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
   };
 
   const handleDaySelect = (dayNum: number) => {
+    if (isDateDisabled(dayNum)) return;
     const formattedMonth = String(currentMonth + 1).padStart(2, '0');
     const formattedDay = String(dayNum).padStart(2, '0');
     const newDateStr = `${currentYear}-${formattedMonth}-${formattedDay}`;
@@ -299,7 +352,21 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
             <div>
               {/* Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <button type="button" onClick={handlePrevMonth} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '1.2rem', color: 'var(--text-muted)' }}>&larr;</button>
+                <button 
+                  type="button" 
+                  onClick={handlePrevMonth} 
+                  disabled={!canGoPrevMonth()}
+                  style={{ 
+                    border: 'none', 
+                    background: 'transparent', 
+                    cursor: canGoPrevMonth() ? 'pointer' : 'not-allowed', 
+                    fontSize: '1.2rem', 
+                    color: 'var(--text-muted)',
+                    opacity: canGoPrevMonth() ? 1 : 0.3
+                  }}
+                >
+                  &larr;
+                </button>
                 <span style={{ fontWeight: 700, color: 'var(--secondary)', fontSize: '0.9rem' }}>
                   {monthNames[currentMonth]} {currentYear}
                 </span>
@@ -315,23 +382,25 @@ function CustomDateTimePicker({ label, valueDate, valueTime, onChange, minDate }
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
                 {daysArray.map((day, idx) => {
                   const isActive = getIsActiveDay(day);
+                  const isDisabled = isDateDisabled(day);
                   return (
                     <div
                       key={idx}
-                      onClick={() => day && handleDaySelect(day)}
+                      onClick={() => day && !isDisabled && handleDaySelect(day)}
                       style={{
                         padding: '6px 0',
                         textAlign: 'center',
                         fontSize: '0.8rem',
-                        cursor: day ? 'pointer' : 'default',
+                        cursor: isDisabled ? 'not-allowed' : day ? 'pointer' : 'default',
                         borderRadius: 'var(--radius-sm)',
                         backgroundColor: isActive ? 'var(--primary)' : 'transparent',
-                        color: isActive ? '#FFFFFF' : day ? 'var(--secondary)' : 'transparent',
+                        color: isActive ? '#FFFFFF' : isDisabled ? 'var(--border-color)' : day ? 'var(--secondary)' : 'transparent',
+                        opacity: isDisabled ? 0.3 : 1,
                         fontWeight: isActive ? 700 : 500,
                         transition: 'background-color 0.2s',
                         border: '1px solid transparent'
                       }}
-                      className={day ? "day-cell-hover" : ""}
+                      className={day && !isDisabled ? "day-cell-hover" : ""}
                     >
                       {day}
                     </div>
