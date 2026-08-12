@@ -96,6 +96,16 @@ export default function AdminBookings() {
   const [newDistanceKm, setNewDistanceKm] = useState('');
   const [newTotalFare, setNewTotalFare] = useState('');
   const [newPaymentMode, setNewPaymentMode] = useState<'cash' | 'upi'>('cash');
+  const [validationErrors, setValidationErrors] = useState<{
+    name?: string;
+    phone?: string;
+    pickup?: string;
+    drop?: string;
+    distance?: string;
+    fare?: string;
+    date?: string;
+    time?: string;
+  }>({});
 
   const fetchData = async (quiet = false) => {
     try {
@@ -246,21 +256,64 @@ export default function AdminBookings() {
 
   const handleCreateBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCustomerPhone || !newPickupAddress || !newDropAddress || !newScheduledDate || !newScheduledTime || !newTotalFare) {
-      alert('Please fill in all required fields.');
+    
+    // Reset and compile validation errors
+    const errors: typeof validationErrors = {};
+    if (!newCustomerPhone) errors.phone = 'Passenger mobile is required';
+    if (!newPickupAddress) errors.pickup = 'Pickup address is required';
+    if (!newDropAddress) errors.drop = 'Drop address is required';
+    if (!newScheduledDate) errors.date = 'Pickup date is required';
+    if (!newScheduledTime) errors.time = 'Pickup time is required';
+    if (!newTotalFare) errors.fare = 'Total Fare is required';
+
+    if (newCustomerPhone) {
+      const cleanPhone = newCustomerPhone.replace(/\s+/g, '');
+      if (!/^\d{10}$/.test(cleanPhone)) {
+        errors.phone = 'Mobile number must be exactly 10 digits';
+      }
+    }
+
+    if (newDistanceKm) {
+      if (isNaN(Number(newDistanceKm)) || Number(newDistanceKm) < 0) {
+        errors.distance = 'Distance must be a valid positive number';
+      }
+    }
+
+    if (newTotalFare) {
+      if (isNaN(Number(newTotalFare)) || Number(newTotalFare) < 0) {
+        errors.fare = 'Total Fare must be a valid positive number';
+      }
+    }
+
+    if (newCustomerName && newCustomerName.trim() !== '') {
+      if (!/^[A-Za-z\s]+$/.test(newCustomerName)) {
+        errors.name = 'Passenger name must contain only letters and spaces';
+      }
+    }
+
+    if (newPickupAddress) {
+      if (!/^[A-Za-z\s,.'()/-]+$/.test(newPickupAddress)) {
+        errors.pickup = 'Pickup address must contain only characters (no numbers)';
+      }
+    }
+
+    if (newDropAddress) {
+      if (!/^[A-Za-z\s,.'()/-]+$/.test(newDropAddress)) {
+        errors.drop = 'Drop address must contain only characters (no numbers)';
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
 
+    setValidationErrors({});
     setAssigning(true);
     setErrorMsg('');
 
     try {
       const scheduledAt = new Date(`${newScheduledDate}T${newScheduledTime}`).toISOString();
-      let returnScheduledAt = null;
-      if (newRideType === 'round_trip' && newReturnDate && newReturnTime) {
-        returnScheduledAt = new Date(`${newReturnDate}T${newReturnTime}`).toISOString();
-      }
-
       const response = await fetch('/api/admin/rides', {
         method: 'POST',
         headers: {
@@ -343,6 +396,7 @@ export default function AdminBookings() {
                 setNewReturnDate('');
                 setNewReturnTime('');
                 
+                setValidationErrors({});
                 setShowAddBookingModal(true);
               }}
               className="btn btn-primary btn-sm"
@@ -675,6 +729,9 @@ export default function AdminBookings() {
                     value={newCustomerName}
                     onChange={(e) => setNewCustomerName(e.target.value)}
                   />
+                  {validationErrors.name && (
+                    <div style={{ color: 'var(--error)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{validationErrors.name}</div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Passenger Mobile</label>
@@ -686,6 +743,9 @@ export default function AdminBookings() {
                     onChange={(e) => setNewCustomerPhone(e.target.value)}
                     required
                   />
+                  {validationErrors.phone && (
+                    <div style={{ color: 'var(--error)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{validationErrors.phone}</div>
+                  )}
                 </div>
               </div>
 
@@ -727,6 +787,9 @@ export default function AdminBookings() {
                   onChange={(e) => setNewPickupAddress(e.target.value)}
                   required
                 />
+                {validationErrors.pickup && (
+                  <div style={{ color: 'var(--error)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{validationErrors.pickup}</div>
+                )}
               </div>
 
               <div className="form-group">
@@ -739,6 +802,9 @@ export default function AdminBookings() {
                   onChange={(e) => setNewDropAddress(e.target.value)}
                   required
                 />
+                {validationErrors.drop && (
+                  <div style={{ color: 'var(--error)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{validationErrors.drop}</div>
+                )}
               </div>
 
               {/* Custom Date Time Pickers matching the /book page clock design */}
@@ -770,23 +836,29 @@ export default function AdminBookings() {
                 <div className="form-group">
                   <label className="form-label">Distance (KM)</label>
                   <input
-                    type="number"
+                    type="text"
                     className="form-control"
                     placeholder="Estimated distance"
                     value={newDistanceKm}
                     onChange={(e) => setNewDistanceKm(e.target.value)}
                   />
+                  {validationErrors.distance && (
+                    <div style={{ color: 'var(--error)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{validationErrors.distance}</div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label className="form-label">Total Fare (₹)</label>
                   <input
-                    type="number"
+                    type="text"
                     className="form-control"
                     placeholder="e.g. 2400"
                     value={newTotalFare}
                     onChange={(e) => setNewTotalFare(e.target.value)}
                     required
                   />
+                  {validationErrors.fare && (
+                    <div style={{ color: 'var(--error)', fontSize: '0.75rem', marginTop: '0.25rem' }}>{validationErrors.fare}</div>
+                  )}
                 </div>
               </div>
 
