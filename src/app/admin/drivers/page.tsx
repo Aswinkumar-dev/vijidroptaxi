@@ -3,7 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, UserPlus, CreditCard, Calendar, Check, X, ShieldAlert } from 'lucide-react';
+import { RefreshCw, UserPlus, CreditCard, Calendar, Check, X, ShieldAlert, QrCode } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const DriverQRCode = dynamic(() => import('@/components/DriverQRCode'), { ssr: false });
 
 export default function AdminDrivers() {
   const router = useRouter();
@@ -21,6 +24,9 @@ export default function AdminDrivers() {
   const [licenseExpiry, setLicenseExpiry] = useState('');
   const [carId, setCarId] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // QR Code Modal State
+  const [qrDriver, setQrDriver] = useState<{ id: string; name: string } | null>(null);
 
   const fetchData = async () => {
     try {
@@ -45,22 +51,25 @@ export default function AdminDrivers() {
         return;
       }
 
-      // Fetch drivers via secure GET API
-      const driversResponse = await fetch('/api/admin/drivers');
-      const driversData = await driversResponse.json();
+      // Fire all three requests in parallel
+      const [driversResponse, profilesResponse, carsResponse] = await Promise.all([
+        fetch('/api/admin/drivers'),
+        fetch('/api/admin/drivers?unlinked=true'),
+        fetch('/api/admin/cars'),
+      ]);
+
+      const [driversData, profilesData, carsData] = await Promise.all([
+        driversResponse.json(),
+        profilesResponse.json(),
+        carsResponse.json(),
+      ]);
+
       if (!driversResponse.ok) throw new Error(driversData.error || 'Failed to fetch drivers');
-      setDrivers(driversData.drivers || []);
-
-      // Fetch all unlinked registered profiles via secure API
-      const profilesResponse = await fetch('/api/admin/drivers?unlinked=true');
-      const profilesData = await profilesResponse.json();
       if (!profilesResponse.ok) throw new Error(profilesData.error || 'Failed to fetch unlinked profiles');
-      setProfiles(profilesData.profiles || []);
-
-      // Fetch active cars via API
-      const carsResponse = await fetch('/api/admin/cars');
-      const carsData = await carsResponse.json();
       if (!carsResponse.ok) throw new Error(carsData.error || 'Failed to fetch cars');
+
+      setDrivers(driversData.drivers || []);
+      setProfiles(profilesData.profiles || []);
       setCars(carsData.cars || []);
 
     } catch (err: any) {
@@ -239,13 +248,23 @@ export default function AdminDrivers() {
                       </span>
                     </td>
                     <td>
-                      <button
-                        onClick={() => toggleDriverActive(drv.id, drv.is_active)}
-                        className={`btn btn-sm ${drv.is_active ? 'btn-danger' : 'btn-primary'}`}
-                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-                      >
-                        {drv.is_active ? 'Suspend' : 'Activate'}
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => toggleDriverActive(drv.id, drv.is_active)}
+                          className={`btn btn-sm ${drv.is_active ? 'btn-danger' : 'btn-primary'}`}
+                          style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                        >
+                          {drv.is_active ? 'Suspend' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => setQrDriver({ id: drv.id, name: drv.profile?.full_name || 'Driver' })}
+                          className="btn btn-ghost btn-sm"
+                          style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                          title="View / Print QR Code"
+                        >
+                          <QrCode size={13} /> QR
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -359,6 +378,31 @@ export default function AdminDrivers() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Modal */}
+      {qrDriver && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '400px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ color: 'var(--secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <QrCode size={18} style={{ color: 'var(--primary)' }} /> Driver QR Code
+              </h3>
+              <button
+                onClick={() => setQrDriver(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
+              QR code for <strong style={{ color: 'var(--secondary)' }}>{qrDriver.name}</strong>. Print and place it in the vehicle so passengers can scan and leave reviews.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <DriverQRCode driverId={qrDriver.id} driverName={qrDriver.name} size={220} showActions={true} />
+            </div>
           </div>
         </div>
       )}

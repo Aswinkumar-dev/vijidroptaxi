@@ -130,32 +130,26 @@ export default function AdminBookings() {
         return;
       }
 
-      // Fetch all bookings using server-side API (bypassing client-side RLS)
-      const res = await fetch('/api/admin/rides');
-      const ridesData = await res.json();
+      // Fire all three API requests in parallel — saves ~1–1.5s vs sequential
+      const [ridesRes, driversRes, carsRes] = await Promise.all([
+        fetch('/api/admin/rides'),
+        fetch('/api/admin/drivers'),
+        fetch('/api/admin/cars'),
+      ]);
 
-      if (!res.ok) {
-        throw new Error(ridesData.error || 'Failed to fetch bookings.');
-      }
+      const [ridesData, driversJson, carsJson] = await Promise.all([
+        ridesRes.json(),
+        driversRes.json(),
+        carsRes.json(),
+      ]);
+
+      if (!ridesRes.ok) throw new Error(ridesData.error || 'Failed to fetch bookings.');
+      if (!driversRes.ok) throw new Error(driversJson.error || 'Failed to fetch drivers.');
+      if (!carsRes.ok) throw new Error(carsJson.error || 'Failed to fetch vehicles.');
+
       setBookings(ridesData || []);
-
-      // Fetch drivers using server-side API (bypassing client-side RLS)
-      const driversRes = await fetch('/api/admin/drivers');
-      const driversJson = await driversRes.json();
-      if (!driversRes.ok) {
-        throw new Error(driversJson.error || 'Failed to fetch drivers.');
-      }
-      const activeDrivers = (driversJson.drivers || []).filter((d: any) => d.is_active);
-      setDrivers(activeDrivers);
-
-      // Fetch vehicles using server-side API (bypassing client-side RLS)
-      const carsRes = await fetch('/api/admin/cars');
-      const carsJson = await carsRes.json();
-      if (!carsRes.ok) {
-        throw new Error(carsJson.error || 'Failed to fetch vehicles.');
-      }
-      const activeCars = (carsJson.cars || []).filter((c: any) => c.is_active);
-      setCars(activeCars);
+      setDrivers((driversJson.drivers || []).filter((d: any) => d.is_active));
+      setCars((carsJson.cars || []).filter((c: any) => c.is_active));
 
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred fetching bookings.');

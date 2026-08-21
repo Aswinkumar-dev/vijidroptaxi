@@ -86,9 +86,16 @@ export default function DriverHistory() {
         return;
       }
 
-      // Fetch driver profile from server
-      const profileResponse = await fetch('/api/driver/profile');
-      const profileData = await profileResponse.json();
+      // Fire profile + rides requests in parallel
+      const [profileResponse, ridesResponse] = await Promise.all([
+        fetch('/api/driver/profile'),
+        fetch('/api/driver/rides?history=true'),
+      ]);
+
+      const [profileData, completedRides] = await Promise.all([
+        profileResponse.json(),
+        ridesResponse.json(),
+      ]);
 
       if (!profileResponse.ok) {
         throw new Error(profileData.error || 'Failed to fetch driver profile.');
@@ -103,10 +110,6 @@ export default function DriverHistory() {
         setLoading(false);
         return;
       }
-
-      // Fetch completed rides for this driver from server
-      const ridesResponse = await fetch('/api/driver/rides?history=true');
-      const completedRides = await ridesResponse.json();
 
       if (!ridesResponse.ok) {
         throw new Error(completedRides.error || 'Failed to fetch ride history.');

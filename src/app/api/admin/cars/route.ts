@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabaseServer';
+import { getCache, setCache, invalidateCache } from '@/lib/apiCache';
+
+const CACHE_KEY = 'admin:cars';
+const CACHE_TTL = 30_000; // 30 seconds — car list is very stable
 
 async function verifyAdmin() {
   const supabase = await createClient();
@@ -23,6 +27,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Admins only' }, { status: 403 });
     }
 
+    // Serve from cache if fresh
+    const cached = getCache<object>(CACHE_KEY);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+      });
+    }
+
     const adminSupabase = createAdminClient();
     const { data: cars, error } = await adminSupabase
       .from('cars')
@@ -34,7 +46,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ cars });
+    const result = { cars };
+    setCache(CACHE_KEY, result, CACHE_TTL);
+
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+    });
   } catch (error: any) {
     console.error('Server error fetching cars:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
@@ -78,6 +95,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    invalidateCache('admin:cars');
     return NextResponse.json({ message: 'Vehicle added successfully', car }, { status: 201 });
   } catch (error: any) {
     console.error('Server error adding car:', error);
@@ -124,6 +142,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    invalidateCache('admin:cars');
     return NextResponse.json({ message: 'Vehicle updated successfully', car });
   } catch (error: any) {
     console.error('Server error updating car:', error);

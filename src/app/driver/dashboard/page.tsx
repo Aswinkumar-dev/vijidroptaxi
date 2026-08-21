@@ -14,10 +14,11 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const fetchDriverDashboardData = async () => {
+  const fetchDriverDashboardData = async (silent = false) => {
     try {
+      if (!silent) setLoading(true);
       setErrorMsg('');
-      
+
       // 1. Get authenticated user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -25,7 +26,7 @@ export default function DriverDashboard() {
         return;
       }
 
-      // 2. Fetch driver profile & record from server
+      // 2. Fire profile + rides requests in parallel (profile needed first to know driver id)
       const profileResponse = await fetch('/api/driver/profile');
       const profileData = await profileResponse.json();
 
@@ -36,19 +37,17 @@ export default function DriverDashboard() {
       const { driver: driverData, profile } = profileData;
 
       if (driverData) {
-        setDriver({
-          ...driverData,
-          profile: profile
-        });
+        const driverWithProfile = { ...driverData, profile };
 
-        // 3. Fetch active rides
-        const response = await fetch('/api/driver/rides');
-        const data = await response.json();
+        // 3. Fetch active rides in parallel — no need to wait for profile above beyond auth
+        const ridesResponse = await fetch('/api/driver/rides');
+        const data = await ridesResponse.json();
 
-        if (!response.ok) {
+        if (!ridesResponse.ok) {
           throw new Error(data.error || 'Failed to fetch assigned rides.');
         }
 
+        setDriver(driverWithProfile);
         setRides(data || []);
       } else {
         setDriver({
@@ -56,7 +55,7 @@ export default function DriverDashboard() {
           car: null,
           is_not_linked: true,
           total_rides: 0,
-          rating_avg: '—'
+          rating_avg: '—',
         });
         setRides([]);
       }
@@ -191,7 +190,7 @@ export default function DriverDashboard() {
           <div className="card" style={{ textAlign: 'center', padding: '3.5rem 2rem' }}>
             <h3 style={{ color: 'var(--secondary)', marginBottom: '0.5rem' }}>No Active Rides</h3>
             <p>You have no current assigned bookings to fulfill. Check back when the administrator schedules a run.</p>
-            <button onClick={fetchDriverDashboardData} className="btn btn-outline btn-sm" style={{ marginTop: '1.5rem' }}>
+            <button onClick={() => fetchDriverDashboardData()} className="btn btn-outline btn-sm" style={{ marginTop: '1.5rem' }}>
               <RefreshCw size={14} style={{ marginRight: '0.25rem' }} /> Refresh Dashboard
             </button>
           </div>

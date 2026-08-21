@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabaseServer';
+import { getCache, setCache, invalidateCache } from '@/lib/apiCache';
+
+const CACHE_KEY_LIST = 'admin:rides:list';
+const CACHE_KEY_RECENT = 'admin:rides:recent';
+const CACHE_TTL = 10_000; // 10 seconds
 
 async function verifyAdmin() {
   const supabase = await createClient();
@@ -66,6 +71,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Bust rides cache so next load reflects new booking
+    invalidateCache('admin:rides');
+    invalidateCache('admin:stats');
+
     return NextResponse.json({ message: 'Ride created successfully', ride }, { status: 201 });
   } catch (error: any) {
     console.error('Server error creating manual booking:', error);
@@ -81,7 +90,17 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : null;
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam) : null;
+    const cacheKey = limit ? CACHE_KEY_RECENT : CACHE_KEY_LIST;
+
+    // Serve from cache if fresh
+    const cached = getCache<any[]>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': 'private, max-age=10, stale-while-revalidate=20' },
+      });
+    }
 
     const adminSupabase = createAdminClient();
     let query = adminSupabase
@@ -108,7 +127,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(rides || []);
+    const result = rides || [];
+    setCache(cacheKey, result, CACHE_TTL);
+
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'private, max-age=10, stale-while-revalidate=20' },
+    });
   } catch (error: any) {
     console.error('Server error fetching bookings:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });

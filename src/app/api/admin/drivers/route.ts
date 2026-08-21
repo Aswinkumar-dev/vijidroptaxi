@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabaseServer';
+import { getCache, setCache, invalidateCache } from '@/lib/apiCache';
+
+const CACHE_KEY = 'admin:drivers';
+const CACHE_KEY_UNLINKED = 'admin:drivers:unlinked';
+const CACHE_TTL = 30_000; // 30 seconds — driver list is fairly stable
 
 async function verifyAdmin() {
   const supabase = await createClient();
@@ -25,26 +30,32 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const unlinkedOnly = searchParams.get('unlinked') === 'true';
+    const cacheKey = unlinkedOnly ? CACHE_KEY_UNLINKED : CACHE_KEY;
+
+    // Serve from cache if fresh
+    const cached = getCache<object>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+      });
+    }
 
     const adminSupabase = createAdminClient();
 
     if (unlinkedOnly) {
-      // 1. Fetch all profiles with role 'driver' or 'admin'
-      const { data: profiles, error: profilesError } = await adminSupabase
-        .from('profiles')
-        .select('id, full_name, phone, role')
-        .in('role', ['driver', 'admin']);
+      // Run both queries in parallel
+      const [
+        { data: profiles, error: profilesError },
+        { data: linkedDrivers, error: driversError },
+      ] = await Promise.all([
+        adminSupabase.from('profiles').select('id, full_name, phone, role').in('role', ['driver', 'admin']),
+        adminSupabase.from('drivers').select('profile_id'),
+      ]);
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
         return NextResponse.json({ error: profilesError.message }, { status: 500 });
       }
-
-      // 2. Fetch all linked profile IDs from drivers table
-      const { data: linkedDrivers, error: driversError } = await adminSupabase
-        .from('drivers')
-        .select('profile_id');
-
       if (driversError) {
         console.error('Error fetching linked drivers:', driversError);
         return NextResponse.json({ error: driversError.message }, { status: 500 });
@@ -52,8 +63,12 @@ export async function GET(req: NextRequest) {
 
       const linkedIds = (linkedDrivers || []).map(d => d.profile_id);
       const unlinkedProfiles = (profiles || []).filter(p => !linkedIds.includes(p.id));
+      const result = { profiles: unlinkedProfiles };
 
-      return NextResponse.json({ profiles: unlinkedProfiles });
+      setCache(cacheKey, result, CACHE_TTL);
+      return NextResponse.json(result, {
+        headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+      });
     }
 
     const { data: drivers, error } = await adminSupabase
@@ -70,7 +85,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ drivers });
+    const result = { drivers };
+    setCache(cacheKey, result, CACHE_TTL);
+
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' },
+    });
   } catch (error: any) {
     console.error('Server error fetching drivers:', error);
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
@@ -112,6 +132,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    invalidateCache('admin:drivers');
     return NextResponse.json({ message: 'Driver linked successfully', driver }, { status: 201 });
   } catch (error: any) {
     console.error('Server error linking driver:', error);
@@ -151,6 +172,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    invalidateCache('admin:drivers');
     return NextResponse.json({ message: 'Driver updated successfully', driver });
   } catch (error: any) {
     console.error('Server error updating driver:', error);
