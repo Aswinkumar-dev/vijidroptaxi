@@ -257,7 +257,7 @@ export default function DriverDashboard() {
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '450px', lineHeight: 1.6 }}>
                 Print this unique QR code and place it inside your vehicle. Customers can scan it to leave a review & rating directly for you.
               </p>
-              <DriverQRCode driverId={driver.id} driverName={driver?.profile?.full_name} size={200} showActions={true} />
+              <DriverQRCode driverId={driver.id} driverName={driver?.profile?.full_name} size={200} showActions={true} showPrint={false} />
             </div>
           </div>
         )}

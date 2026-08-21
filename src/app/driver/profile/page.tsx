@@ -208,7 +208,7 @@ export default function DriverProfile() {
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '420px', lineHeight: 1.6 }}>
                 Print this QR code and place it in your vehicle. Passengers can scan it to leave a rating directly for you — no booking reference needed.
               </p>
-              <DriverQRCode driverId={driver.id} driverName={profile?.full_name} size={200} showActions={true} />
+              <DriverQRCode driverId={driver.id} driverName={profile?.full_name} size={200} showActions={true} showPrint={false} />
             </div>
           </div>
         )}

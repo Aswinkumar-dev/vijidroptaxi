@@ -9,9 +9,10 @@ interface DriverQRCodeProps {
   driverName?: string;
   size?: number;
   showActions?: boolean;
+  showPrint?: boolean;
 }
 
-export default function DriverQRCode({ driverId, driverName, size = 200, showActions = true }: DriverQRCodeProps) {
+export default function DriverQRCode({ driverId, driverName, size = 200, showActions = true, showPrint = true }: DriverQRCodeProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [dataUrl, setDataUrl] = useState('');
 
@@ -154,13 +155,15 @@ export default function DriverQRCode({ driverId, driverName, size = 200, showAct
           >
             <Download size={13} /> Download
           </button>
-          <button
-            onClick={handlePrint}
-            className="btn btn-primary btn-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}
-          >
-            <Printer size={13} /> Print QR
-          </button>
+          {showPrint && (
+            <button
+              onClick={handlePrint}
+              className="btn btn-primary btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}
+            >
+              <Printer size={13} /> Print QR
+            </button>
+          )}
         </div>
       )}
     </div>
