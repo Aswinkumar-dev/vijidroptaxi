@@ -4,7 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw, MapPin, Calendar, Clock, ArrowRight, DollarSign, Award } from 'lucide-react';
+import { RefreshCw, MapPin, Calendar, Clock, ArrowRight, DollarSign, Award, QrCode } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const DriverQRCode = dynamic(() => import('@/components/DriverQRCode'), { ssr: false });
 
 // ─── Module-level client cache ───────────────────────────────────────────────
 // These survive React unmount/remount during SPA navigation within the same
@@ -241,6 +244,21 @@ export default function DriverDashboard() {
                 </Link>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* QR Code Card for Review Collection */}
+        {driver && driver.id && !driver.is_not_linked && (
+          <div className="card" style={{ marginTop: '2.5rem', padding: '2rem' }}>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <QrCode size={18} style={{ color: 'var(--primary)' }} /> Your Customer Review QR Code
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '450px', lineHeight: 1.6 }}>
+                Print this unique QR code and place it inside your vehicle. Customers can scan it to leave a review & rating directly for you.
+              </p>
+              <DriverQRCode driverId={driver.id} driverName={driver?.profile?.full_name} size={200} showActions={true} />
+            </div>
           </div>
         )}
 
