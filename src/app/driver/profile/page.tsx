@@ -3,36 +3,63 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { User, Phone, Mail, Award, Car, CreditCard, Calendar } from 'lucide-react';
+import { User, Phone, Mail, Award, Car, CreditCard, Calendar, QrCode } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const DriverQRCode = dynamic(() => import('@/components/DriverQRCode'), { ssr: false });
+
+// ─── Module-level client cache ────────────────────────────────────────────────
+let _cachedProfile: any = null;
+let _cachedDriver: any = null;
+let _cachedEmail = '';
+let _cacheTs = 0;
+const CACHE_TTL = 30_000; // 30 seconds
 
 export default function DriverProfile() {
   const router = useRouter();
   
-  const [profile, setProfile] = useState<any>(null);
-  const [driver, setDriver] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const isCacheWarm = _cachedProfile !== null && Date.now() - _cacheTs < CACHE_TTL;
+  const [profile, setProfile] = useState<any>(isCacheWarm ? _cachedProfile : null);
+  const [driver, setDriver] = useState<any>(isCacheWarm ? _cachedDriver : null);
+  const [email, setEmail] = useState<string>(isCacheWarm ? _cachedEmail : '');
+  const [loading, setLoading] = useState(!isCacheWarm);
   const [errorMsg, setErrorMsg] = useState('');
-  const [email, setEmail] = useState('');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) {
         router.push('/driver/login');
       } else {
-        setEmail(user.email || '');
-        fetchDriverProfile(user.id);
+        const userEmail = user.email || '';
+        setEmail(userEmail);
+        _cachedEmail = userEmail;
+
+        const isStale = !_cachedProfile || Date.now() - _cacheTs >= CACHE_TTL;
+        if (isStale) {
+          fetchDriverProfile(true);
+        } else {
+          setProfile(_cachedProfile);
+          setDriver(_cachedDriver);
+          setLoading(false);
+          fetchDriverProfile(false); // silent background refresh
+        }
       }
     });
   }, []);
 
-  const fetchDriverProfile = async (userId: string) => {
+  const fetchDriverProfile = async (showLoading = true) => {
     try {
+      if (showLoading) setLoading(true);
       const response = await fetch('/api/driver/profile');
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to load driver profile details.');
       }
+
+      _cachedProfile = data.profile;
+      _cachedDriver = data.driver || null;
+      _cacheTs = Date.now();
 
       setProfile(data.profile);
       setDriver(data.driver || null);
@@ -170,6 +197,21 @@ export default function DriverProfile() {
           </div>
 
         </div>
+
+        {/* QR Code Card */}
+        {driver && (
+          <div className="card" style={{ marginTop: '2rem', padding: '2rem' }}>
+            <h3 style={{ fontSize: '1.2rem', color: 'var(--secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <QrCode size={18} style={{ color: 'var(--primary)' }} /> Your Review QR Code
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center', maxWidth: '420px', lineHeight: 1.6 }}>
+                Print this QR code and place it in your vehicle. Passengers can scan it to leave a rating directly for you — no booking reference needed.
+              </p>
+              <DriverQRCode driverId={driver.id} driverName={profile?.full_name} size={200} showActions={true} />
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

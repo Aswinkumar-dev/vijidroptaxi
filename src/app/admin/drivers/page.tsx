@@ -8,13 +8,21 @@ import dynamic from 'next/dynamic';
 
 const DriverQRCode = dynamic(() => import('@/components/DriverQRCode'), { ssr: false });
 
+// ─── Module-level client cache ────────────────────────────────────────────────
+let _cachedDrivers: any[] | null = null;
+let _cachedProfiles: any[] | null = null;
+let _cachedCars: any[] | null = null;
+let _cacheTs = 0;
+const CACHE_TTL = 30_000; // 30 seconds
+
 export default function AdminDrivers() {
   const router = useRouter();
 
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
-  const [cars, setCars] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isCacheWarm = _cachedDrivers !== null && Date.now() - _cacheTs < CACHE_TTL;
+  const [drivers, setDrivers] = useState<any[]>(isCacheWarm ? _cachedDrivers! : []);
+  const [profiles, setProfiles] = useState<any[]>(isCacheWarm ? _cachedProfiles! : []);
+  const [cars, setCars] = useState<any[]>(isCacheWarm ? _cachedCars! : []);
+  const [loading, setLoading] = useState(!isCacheWarm);
   const [errorMsg, setErrorMsg] = useState('');
   
   // Add/Edit Form State
@@ -28,9 +36,9 @@ export default function AdminDrivers() {
   // QR Code Modal State
   const [qrDriver, setQrDriver] = useState<{ id: string; name: string } | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async (quiet = false) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
       setErrorMsg('');
 
       // Authenticate & Verify admin role
@@ -68,9 +76,19 @@ export default function AdminDrivers() {
       if (!profilesResponse.ok) throw new Error(profilesData.error || 'Failed to fetch unlinked profiles');
       if (!carsResponse.ok) throw new Error(carsData.error || 'Failed to fetch cars');
 
-      setDrivers(driversData.drivers || []);
-      setProfiles(profilesData.profiles || []);
-      setCars(carsData.cars || []);
+      const freshDrivers = driversData.drivers || [];
+      const freshProfiles = profilesData.profiles || [];
+      const freshCars = carsData.cars || [];
+
+      // Update module cache
+      _cachedDrivers = freshDrivers;
+      _cachedProfiles = freshProfiles;
+      _cachedCars = freshCars;
+      _cacheTs = Date.now();
+
+      setDrivers(freshDrivers);
+      setProfiles(freshProfiles);
+      setCars(freshCars);
 
     } catch (err: any) {
       setErrorMsg(err.message || 'Error occurred.');
@@ -80,7 +98,16 @@ export default function AdminDrivers() {
   };
 
   useEffect(() => {
-    fetchData();
+    const isStale = !_cachedDrivers || Date.now() - _cacheTs >= CACHE_TTL;
+    if (isStale) {
+      fetchData();
+    } else {
+      setDrivers(_cachedDrivers!);
+      setProfiles(_cachedProfiles!);
+      setCars(_cachedCars!);
+      setLoading(false);
+      fetchData(true); // silent background refresh
+    }
   }, []);
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -177,7 +204,7 @@ export default function AdminDrivers() {
             <p>Manage driver documentation and link vehicle assignments</p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button onClick={fetchData} className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--border-color)' }}>
+            <button onClick={() => fetchData()} className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--border-color)' }}>
               <RefreshCw size={14} /> Refresh
             </button>
             <button onClick={() => setShowAddModal(true)} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>

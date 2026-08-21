@@ -5,13 +5,21 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, MapPin, Calendar, Clock, User, Car, Tag, Check, X, ShieldAlert, Plus } from 'lucide-react';
 
+// ─── Module-level client cache ────────────────────────────────────────────────
+let _cachedBookings: any[] | null = null;
+let _cachedDrivers: any[] | null = null;
+let _cachedCars: any[] | null = null;
+let _cacheTs = 0;
+const CACHE_TTL = 20_000; // 20 seconds
+
 export default function AdminBookings() {
   const router = useRouter();
 
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [drivers, setDrivers] = useState<any[]>([]);
-  const [cars, setCars] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isCacheWarm = _cachedBookings !== null && Date.now() - _cacheTs < CACHE_TTL;
+  const [bookings, setBookings] = useState<any[]>(isCacheWarm ? _cachedBookings! : []);
+  const [drivers, setDrivers] = useState<any[]>(isCacheWarm ? _cachedDrivers! : []);
+  const [cars, setCars] = useState<any[]>(isCacheWarm ? _cachedCars! : []);
+  const [loading, setLoading] = useState(!isCacheWarm);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Date Filtering State (strictly starting from August 2026)
@@ -147,9 +155,19 @@ export default function AdminBookings() {
       if (!driversRes.ok) throw new Error(driversJson.error || 'Failed to fetch drivers.');
       if (!carsRes.ok) throw new Error(carsJson.error || 'Failed to fetch vehicles.');
 
-      setBookings(ridesData || []);
-      setDrivers((driversJson.drivers || []).filter((d: any) => d.is_active));
-      setCars((carsJson.cars || []).filter((c: any) => c.is_active));
+      const freshBookings = ridesData || [];
+      const freshDrivers = (driversJson.drivers || []).filter((d: any) => d.is_active);
+      const freshCars = (carsJson.cars || []).filter((c: any) => c.is_active);
+
+      // Update module cache
+      _cachedBookings = freshBookings;
+      _cachedDrivers = freshDrivers;
+      _cachedCars = freshCars;
+      _cacheTs = Date.now();
+
+      setBookings(freshBookings);
+      setDrivers(freshDrivers);
+      setCars(freshCars);
 
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred fetching bookings.');
@@ -159,7 +177,16 @@ export default function AdminBookings() {
   };
 
   useEffect(() => {
-    fetchData();
+    const isStale = !_cachedBookings || Date.now() - _cacheTs >= CACHE_TTL;
+    if (isStale) {
+      fetchData();
+    } else {
+      setBookings(_cachedBookings!);
+      setDrivers(_cachedDrivers!);
+      setCars(_cachedCars!);
+      setLoading(false);
+      fetchData(true); // silent background refresh
+    }
 
     // Auto-refresh bookings quietly in the background every 20 seconds
     const interval = setInterval(() => {

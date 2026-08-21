@@ -5,12 +5,20 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, Calendar, MapPin, DollarSign, Award } from 'lucide-react';
 
+// ─── Module-level client cache ────────────────────────────────────────────────
+let _cachedRides: any[] | null = null;
+let _cachedEarnings = 0;
+let _cacheTs = 0;
+const CACHE_TTL = 30_000; // 30 seconds
+
 export default function DriverHistory() {
   const router = useRouter();
   
-  const [rides, setRides] = useState<any[]>([]);
-  const [earnings, setEarnings] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const isCacheWarm = _cachedRides !== null && Date.now() - _cacheTs < CACHE_TTL;
+  const [rides, setRides] = useState<any[]>(isCacheWarm ? _cachedRides! : []);
+  const [earnings, setEarnings] = useState<number>(isCacheWarm ? _cachedEarnings : 0);
+  const [loading, setLoading] = useState(!isCacheWarm);
+  const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Date Filtering State (strictly starting from August 2026)
@@ -74,9 +82,12 @@ export default function DriverHistory() {
     return pages;
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        if (_cachedRides) setRefreshing(true);
+        else setLoading(true);
+      }
       setErrorMsg('');
 
       // Get user
@@ -104,10 +115,11 @@ export default function DriverHistory() {
       const { driver } = profileData;
 
       if (!driver) {
-        // Driver is not linked yet
+        _cachedRides = [];
+        _cachedEarnings = 0;
+        _cacheTs = Date.now();
         setRides([]);
         setEarnings(0);
-        setLoading(false);
         return;
       }
 
@@ -115,20 +127,34 @@ export default function DriverHistory() {
         throw new Error(completedRides.error || 'Failed to fetch ride history.');
       }
 
-      setRides(completedRides || []);
+      const freshRides = completedRides || [];
+      const total = freshRides.reduce((acc: any, curr: any) => acc + Number(curr.total_fare || 0), 0);
 
-      // Calculate total earnings
-      const total = (completedRides || []).reduce((acc: any, curr: any) => acc + Number(curr.total_fare || 0), 0);
+      // Update module cache
+      _cachedRides = freshRides;
+      _cachedEarnings = total;
+      _cacheTs = Date.now();
+
+      setRides(freshRides);
       setEarnings(total);
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchHistory();
+    const isStale = !_cachedRides || Date.now() - _cacheTs >= CACHE_TTL;
+    if (isStale) {
+      fetchHistory();
+    } else {
+      setRides(_cachedRides!);
+      setEarnings(_cachedEarnings);
+      setLoading(false);
+      fetchHistory(true); // silent background refresh
+    }
   }, []);
 
   return (

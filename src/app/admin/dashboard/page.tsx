@@ -6,21 +6,20 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, ClipboardList, Users, Car, HelpCircle, DollarSign, Star, CheckCircle } from 'lucide-react';
 
+// ─── Module-level client cache ────────────────────────────────────────────────
+const DEFAULT_STATS = { totalRides: 0, pendingRides: 0, activeRides: 0, completedRides: 0, totalDrivers: 0, totalCars: 0, avgRating: 4.8 };
+let _cachedStats: typeof DEFAULT_STATS | null = null;
+let _cachedRides: any[] | null = null;
+let _cacheTs = 0;
+const CACHE_TTL = 15_000; // 15 seconds (dashboard refreshes more often)
+
 export default function AdminDashboard() {
   const router = useRouter();
   
-  const [stats, setStats] = useState({
-    totalRides: 0,
-    pendingRides: 0,
-    activeRides: 0,
-    completedRides: 0,
-    totalDrivers: 0,
-    totalCars: 0,
-    avgRating: 4.8
-  });
-  
-  const [recentRides, setRecentRides] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isCacheWarm = _cachedStats !== null && Date.now() - _cacheTs < CACHE_TTL;
+  const [stats, setStats] = useState(_cachedStats ?? DEFAULT_STATS);
+  const [recentRides, setRecentRides] = useState<any[]>(_cachedRides ?? []);
+  const [loading, setLoading] = useState(!isCacheWarm);
   const [errorMsg, setErrorMsg] = useState('');
   const channelRef = useRef<any>(null);
 
@@ -55,6 +54,11 @@ export default function AdminDashboard() {
       if (!statsRes.ok) throw new Error(statsData.error || 'Failed to fetch statistics.');
       if (!recentRes.ok) throw new Error(recentData.error || 'Failed to fetch recent rides.');
 
+      // Update module cache
+      _cachedStats = statsData;
+      _cachedRides = recentData || [];
+      _cacheTs = Date.now();
+
       setStats(statsData);
       setRecentRides(recentData || []);
     } catch (err: any) {
@@ -65,7 +69,15 @@ export default function AdminDashboard() {
   }, [router]);
 
   useEffect(() => {
-    fetchStats();
+    const isStale = !_cachedStats || Date.now() - _cacheTs >= CACHE_TTL;
+    if (isStale) {
+      fetchStats();
+    } else {
+      setStats(_cachedStats!);
+      setRecentRides(_cachedRides!);
+      setLoading(false);
+      fetchStats(true); // silent background refresh
+    }
 
     // Real-time subscription — auto-refresh when any ride is inserted or updated
     channelRef.current = supabase

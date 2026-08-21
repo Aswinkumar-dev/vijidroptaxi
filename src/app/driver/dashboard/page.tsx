@@ -6,27 +6,43 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, MapPin, Calendar, Clock, ArrowRight, DollarSign, Award } from 'lucide-react';
 
+// ─── Module-level client cache ───────────────────────────────────────────────
+// These survive React unmount/remount during SPA navigation within the same
+// browser session, so navigating back to this page shows data instantly.
+let _cachedRides: any[] | null = null;
+let _cachedDriver: any | null = null;
+let _cacheTs = 0;
+const CACHE_TTL = 30_000; // 30 seconds
+
 export default function DriverDashboard() {
   const router = useRouter();
   
-  const [rides, setRides] = useState<any[]>([]);
-  const [driver, setDriver] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // Initialise state from cache — page renders immediately if cache is warm
+  const isCacheWarm = _cachedDriver !== null && Date.now() - _cacheTs < CACHE_TTL;
+  const [rides, setRides] = useState<any[]>(isCacheWarm ? _cachedRides! : []);
+  const [driver, setDriver] = useState<any>(isCacheWarm ? _cachedDriver : null);
+  const [loading, setLoading] = useState(!isCacheWarm);
+  const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const fetchDriverDashboardData = async (silent = false) => {
     try {
-      if (!silent) setLoading(true);
+      if (!silent) {
+        // If we have stale cache, show data immediately and refresh in background
+        if (_cachedDriver) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+      }
       setErrorMsg('');
 
-      // 1. Get authenticated user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/driver/login');
         return;
       }
 
-      // 2. Fire profile + rides requests in parallel (profile needed first to know driver id)
       const profileResponse = await fetch('/api/driver/profile');
       const profileData = await profileResponse.json();
 
@@ -39,7 +55,6 @@ export default function DriverDashboard() {
       if (driverData) {
         const driverWithProfile = { ...driverData, profile };
 
-        // 3. Fetch active rides in parallel — no need to wait for profile above beyond auth
         const ridesResponse = await fetch('/api/driver/rides');
         const data = await ridesResponse.json();
 
@@ -47,27 +62,49 @@ export default function DriverDashboard() {
           throw new Error(data.error || 'Failed to fetch assigned rides.');
         }
 
+        const freshRides = data || [];
+
+        // Update cache
+        _cachedDriver = driverWithProfile;
+        _cachedRides = freshRides;
+        _cacheTs = Date.now();
+
         setDriver(driverWithProfile);
-        setRides(data || []);
+        setRides(freshRides);
       } else {
-        setDriver({
-          profile: profile,
+        const fallback = {
+          profile,
           car: null,
           is_not_linked: true,
           total_rides: 0,
           rating_avg: '—',
-        });
+        };
+        _cachedDriver = fallback;
+        _cachedRides = [];
+        _cacheTs = Date.now();
+
+        setDriver(fallback);
         setRides([]);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchDriverDashboardData();
+    const isStale = !_cachedDriver || Date.now() - _cacheTs >= CACHE_TTL;
+    if (isStale) {
+      fetchDriverDashboardData();
+    } else {
+      // Cache is warm — show stale data instantly, revalidate silently
+      setDriver(_cachedDriver);
+      setRides(_cachedRides!);
+      setLoading(false);
+      fetchDriverDashboardData(true); // silent background refresh
+    }
   }, []);
 
   const getStatusBadge = (status: string) => {
@@ -88,95 +125,27 @@ export default function DriverDashboard() {
       <div className="container" style={{ maxWidth: '900px' }}>
         
         {/* Header stats dashboard panel */}
-        {driver && (
-          <div className="card" style={{
-            backgroundColor: 'var(--secondary)',
-            color: 'white',
-            marginBottom: '2rem',
-            padding: '2rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '1.5rem'
-          }}>
-            <div>
-              <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Driver Console
-              </span>
-              <h1 style={{ color: 'white', fontSize: '1.75rem', marginTop: '0.25rem' }}>
-                Welcome, {driver.profile?.full_name}!
-              </h1>
-              <p style={{ color: '#94A3B8', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                Vehicle: {driver.car ? `${driver.car.color} ${driver.car.brand} ${driver.car.model} (${driver.car.registration_number})` : 'No car linked'}
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '1.5rem' }}>
-              <div style={{ textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '1.5rem' }}>
-                <div style={{ color: 'var(--accent)', fontSize: '1.75rem', fontWeight: 800 }}>{driver.total_rides || 0}</div>
-                <div style={{ color: '#94A3B8', fontSize: '0.75rem', textTransform: 'uppercase' }}>Total Rides</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ color: 'var(--accent)', fontSize: '1.75rem', fontWeight: 800 }}>{driver.rating_avg} ★</div>
-                <div style={{ color: '#94A3B8', fontSize: '0.75rem', textTransform: 'uppercase' }}>Rating</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Permanent Review Link */}
-        {driver && !driver.is_not_linked && (
-          <div className="card" style={{ padding: '1.25rem', marginBottom: '2rem', backgroundColor: '#FAF5FF', border: '1px solid rgba(139, 92, 246, 0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--secondary)', fontSize: '0.95rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                ⭐ Permanent Customer Review Link
-              </h4>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Passengers can scan a QR code of this link inside your vehicle to submit feedback.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => {
-                  const link = `${window.location.origin}/rate/driver/${driver.id}`;
-                  navigator.clipboard.writeText(link);
-                  alert('Review link copied to clipboard!');
-                }}
-                className="btn btn-primary btn-sm"
-              >
-                Copy Link
-              </button>
-              <a
-                href={`/rate/driver/${driver.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-outline btn-sm"
-              >
-                Open Review Page
-              </a>
-            </div>
-          </div>
-        )}
-
-        {driver && driver.is_not_linked && (
-          <div className="alert alert-info" style={{
-            backgroundColor: '#EFF6FF',
-            border: '1px solid #BFDBFE',
-            color: '#1E40AF',
-            padding: '1.25rem',
-            borderRadius: 'var(--radius-md)',
-            marginBottom: '2rem',
-            lineHeight: '1.6'
-          }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: '#1E3A8A', fontSize: '1.05rem', fontWeight: 700 }}>
-              ⚠️ Profile Setup Pending
-            </h4>
-            <p style={{ margin: 0, fontSize: '0.9rem' }}>
-              Your driver registration is approved! However, the dispatcher has not yet linked a vehicle or license details to your driver account. Please contact the administrator to complete your profile configuration.
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 style={{ fontSize: '2rem', color: 'var(--secondary)' }}>
+              Welcome, {driver?.profile?.full_name?.split(' ')[0] || 'Driver'} 👋
+            </h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              {driver?.car
+                ? `Driving: ${driver.car.color} ${driver.car.brand} ${driver.car.model} • ${driver.car.registration_number}`
+                : 'No vehicle assigned yet'}
             </p>
           </div>
-        )}
+          <button
+            onClick={() => fetchDriverDashboardData()}
+            className="btn btn-ghost btn-sm"
+            style={{ border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            disabled={refreshing}
+          >
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
 
         {errorMsg && (
           <div className="alert alert-danger">
@@ -184,7 +153,30 @@ export default function DriverDashboard() {
           </div>
         )}
 
-        <h2 style={{ fontSize: '1.35rem', color: 'var(--secondary)', marginBottom: '1.25rem' }}>Active & Assigned Bookings</h2>
+        {/* Stats Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+          <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
+            <div style={{ color: 'var(--accent)', fontSize: '1.75rem', fontWeight: 800 }}>{driver.rating_avg} ★</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Avg Rating</div>
+          </div>
+          <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
+            <div style={{ color: 'var(--primary)', fontSize: '1.75rem', fontWeight: 800 }}>{driver.total_rides || 0}</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Total Rides</div>
+          </div>
+          <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
+            <div style={{ color: 'var(--success)', fontSize: '1.75rem', fontWeight: 800 }}>{rides.length}</div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Active Rides</div>
+          </div>
+        </div>
+
+        {driver.is_not_linked && (
+          <div className="alert" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', color: 'var(--secondary)', marginBottom: '2rem' }}>
+            <strong>Account Pending Setup:</strong> Your driver profile isn&apos;t linked to a driver record yet. Please contact the administrator to complete your onboarding.
+          </div>
+        )}
+
+        {/* Active Rides */}
+        <h2 style={{ fontSize: '1.3rem', color: 'var(--secondary)', marginBottom: '1.25rem' }}>Active Assignments</h2>
 
         {rides.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '3.5rem 2rem' }}>
@@ -198,55 +190,55 @@ export default function DriverDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {rides.map(ride => (
               <div key={ride.id} className="card card-hover" style={{ padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Calendar size={15} style={{ color: 'var(--primary)' }} />
-                    <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--secondary)' }}>
-                      {new Date(ride.scheduled_at).toLocaleDateString('en-IN', {
-                        weekday: 'short',
-                        day: 'numeric',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--secondary)', fontSize: '1rem', marginBottom: '0.25rem' }}>
+                      {ride.customer?.full_name || ride.customer_name || 'Guest Customer'}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {ride.customer?.phone || ride.customer_phone || '—'}
+                    </div>
                   </div>
                   {getStatusBadge(ride.status)}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Passenger: </span>
-                    <strong style={{ color: 'var(--secondary)' }}>{ride.customer?.full_name}</strong>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>Phone: </span>
-                    <a href={`tel:${ride.customer?.phone}`} style={{ color: 'var(--primary)', fontWeight: 600 }}>{ride.customer?.phone}</a>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.88rem' }}>
+                    <MapPin size={15} style={{ color: 'var(--primary)', flexShrink: 0, marginTop: '2px' }} />
+                    <span style={{ color: 'var(--text-muted)' }}><strong>From:</strong> {ride.pickup_address}</span>
                   </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem', marginTop: '0.5rem' }} className="grid-2">
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
-                      <MapPin size={15} style={{ color: 'var(--primary)', marginTop: '0.25rem' }} />
-                      <span style={{ fontSize: '0.85rem' }}><strong>Pickup:</strong> {ride.pickup_address}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
-                      <MapPin size={15} style={{ color: 'var(--success)', marginTop: '0.25rem' }} />
-                      <span style={{ fontSize: '0.85rem' }}><strong>Drop:</strong> {ride.drop_address}</span>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.88rem' }}>
+                    <MapPin size={15} style={{ color: 'var(--success)', flexShrink: 0, marginTop: '2px' }} />
+                    <span style={{ color: 'var(--text-muted)' }}><strong>To:</strong> {ride.drop_address}</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Class: </span>
-                    <strong style={{ textTransform: 'capitalize', color: 'var(--secondary)' }}>{ride.car_type}</strong>
-                    <span style={{ margin: '0 0.5rem', color: 'var(--border-color)' }}>|</span>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Fare: </span>
-                    <strong style={{ color: 'var(--primary)' }}>₹{ride.total_fare}</strong>
+                <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <Calendar size={13} /> {new Date(ride.scheduled_at).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
                   </div>
-                  
-                  <Link href={`/driver/rides/${ride.id}`} className="btn btn-secondary btn-sm">
-                    Manage Ride Controls <ArrowRight size={14} />
-                  </Link>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <Clock size={13} /> {new Date(ride.scheduled_at).toLocaleTimeString('en-IN', { timeStyle: 'short' })}
+                  </div>
+                  {ride.total_fare && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <DollarSign size={13} /> ₹{ride.total_fare}
+                    </div>
+                  )}
+                  {ride.distance_km > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <Award size={13} /> {ride.distance_km} km
+                    </div>
+                  )}
                 </div>
+
+                <Link
+                  href={`/driver/rides/${ride.id}`}
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  Manage Ride <ArrowRight size={14} />
+                </Link>
               </div>
             ))}
           </div>

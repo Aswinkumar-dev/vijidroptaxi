@@ -5,11 +5,17 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { RefreshCw, Plus, Car, ShieldCheck, Settings, Layers } from 'lucide-react';
 
+// ─── Module-level client cache ────────────────────────────────────────────────
+let _cachedCars: any[] | null = null;
+let _cacheTs = 0;
+const CACHE_TTL = 30_000; // 30 seconds
+
 export default function AdminCars() {
   const router = useRouter();
 
-  const [cars, setCars] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isCacheWarm = _cachedCars !== null && Date.now() - _cacheTs < CACHE_TTL;
+  const [cars, setCars] = useState<any[]>(isCacheWarm ? _cachedCars! : []);
+  const [loading, setLoading] = useState(!isCacheWarm);
   const [errorMsg, setErrorMsg] = useState('');
   
   // Add Car Modal State
@@ -32,9 +38,9 @@ export default function AdminCars() {
   const [editCarType, setEditCarType] = useState<'sedan' | 'suv' | 'innova'>('sedan');
   const [editSeatingCapacity, setEditSeatingCapacity] = useState(4);
 
-  const fetchCars = async () => {
+  const fetchCars = async (quiet = false) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
       setErrorMsg('');
 
       // Authenticate & Verify admin role
@@ -62,7 +68,11 @@ export default function AdminCars() {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to fetch vehicles.');
       }
-      setCars(data.cars || []);
+      
+      const freshCars = data.cars || [];
+      _cachedCars = freshCars;
+      _cacheTs = Date.now();
+      setCars(freshCars);
 
     } catch (err: any) {
       setErrorMsg(err.message || 'Error occurred.');
@@ -72,7 +82,14 @@ export default function AdminCars() {
   };
 
   useEffect(() => {
-    fetchCars();
+    const isStale = !_cachedCars || Date.now() - _cacheTs >= CACHE_TTL;
+    if (isStale) {
+      fetchCars();
+    } else {
+      setCars(_cachedCars!);
+      setLoading(false);
+      fetchCars(true); // silent background refresh
+    }
   }, []);
 
   const handleAddSubmit = async (e: React.FormEvent) => {
@@ -206,7 +223,7 @@ export default function AdminCars() {
             <p>Add, edit, or toggle active vehicles in your taxi cars list</p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button onClick={fetchCars} className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--border-color)' }}>
+            <button onClick={() => fetchCars()} className="btn btn-ghost btn-sm" style={{ border: '1px solid var(--border-color)' }}>
               <RefreshCw size={14} /> Refresh
             </button>
             <button onClick={() => setShowAddModal(true)} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
