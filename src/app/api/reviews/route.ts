@@ -61,6 +61,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: reviewError.message }, { status: 500 });
     }
 
+    // Recalculate and update driver average rating
+    const { data: allReviews, error: reviewsFetchError } = await adminSupabase
+      .from('reviews')
+      .select('rating')
+      .eq('driver_id', finalDriverId);
+
+    if (!reviewsFetchError && allReviews && allReviews.length > 0) {
+      const sum = allReviews.reduce((acc: number, curr: { rating: number }) => acc + curr.rating, 0);
+      const average = parseFloat((sum / allReviews.length).toFixed(1));
+
+      await adminSupabase
+        .from('drivers')
+        .update({ rating_avg: average })
+        .eq('id', finalDriverId);
+    }
+
     return NextResponse.json({
       message: 'Review submitted successfully',
       review,
